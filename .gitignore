@@ -1,0 +1,7 @@
+*.txt
+data*
+__pycache__
+.ipynb_checkpoints
+train_log
+cmdt_pred
+cmdt_images

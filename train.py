@@ -441,14 +441,15 @@ def get_config(args):
 
     callbacks = [
       ModelSaver(),
-      PeriodicTrigger(InferenceRunner(ds_test, [CalMAP(cfg.test_list)]),
-                      every_k_epochs=3),
       ScheduledHyperParamSetter('learning_rate',
                                 [(0, 1e-4), (3, 2e-4), (6, 3e-4), (8, 6e-4), (10, 1e-3), (70, 1e-4), (110, 1e-5)]),
       ScheduledHyperParamSetter('unseen_scale',
                                 [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
       HumanHyperParamSetter('learning_rate'),
     ]
+    if cfg.mAP == True:
+        callbacks.append(PeriodicTrigger(InferenceRunner(ds_test, [CalMAP(cfg.test_list)]),
+                                         every_k_epochs=3))
     if args.debug:
       callbacks.append(HookToCallback(tf_debug.LocalCLIDebugHook()))
     return TrainConfig(

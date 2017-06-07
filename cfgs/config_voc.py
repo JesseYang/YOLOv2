@@ -55,3 +55,5 @@ cfg.det_th = 0.001
 cfg.iou_th = 0.5
 cfg.nms = True
 cfg.nms_th = 0.4
+
+cfg.mAP = True

@@ -23,18 +23,18 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 10
 
-cfg.anchors = [[1.33119195, 1.15934275], [2.06045752, 1.6672473], [2.8275166, 2.38338939], [4.10338642, 3.1694666], [6.50620722, 6.22560465]]
+cfg.anchors = [[4.00939542, 4.76900498], [4.73943582, 5.91242], [5.45915033, 6.60725228], [6.3061683, 7.99082797], [7.84313725, 10.28370098]]
 
 # ignore boxes which are too small (height or width smaller than size_th * 32)
 cfg.size_th = 0.1
 
-cfg.classes_name =  ["draw"]
+cfg.classes_name =  ["doc"]
 
-cfg.classes_num = {'draw': 0}
+cfg.classes_num = {'doc': 0}
 
 
-cfg.train_list = ["draw_train.txt"]
-cfg.test_list = "draw_val.txt"
+cfg.train_list = ["doc_train.txt"]
+cfg.test_list = "doc_test.txt"
 
 cfg.det_th = 0.3
 cfg.iou_th = 0.5

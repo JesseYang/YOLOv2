@@ -54,6 +54,6 @@ cfg.test_list = "voc_2007_test.txt"
 cfg.det_th = 0.001
 cfg.iou_th = 0.5
 cfg.nms = True
-cfg.nms_th = 0.4
+cfg.nms_th = 0.45
 
 cfg.mAP = True

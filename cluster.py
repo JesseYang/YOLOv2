@@ -177,10 +177,8 @@ if __name__ == "__main__":
 
             x_center = (xmin + xmax) / 2
             y_center = (ymin + ymax) / 2
-            width = xmax - xmin
-            height = ymax - ymin
-            width = (xmax - xmin) * width_rate
-            height = (ymax - ymin) * height_rate
+            width = (xmax - xmin + 1) * width_rate
+            height = (ymax - ymin + 1) * height_rate
             box_data.append([x_center, y_center, width, height])
 
     box_data = np.array(box_data)

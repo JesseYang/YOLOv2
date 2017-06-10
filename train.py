@@ -444,7 +444,7 @@ def get_config(args):
     ]
     if cfg.mAP == True:
         callbacks.append(PeriodicTrigger(InferenceRunner(ds_test, [CalMAP(cfg.test_list)]),
-                                         every_k_epochs=1))
+                                         every_k_epochs=3))
     if args.debug:
       callbacks.append(HookToCallback(tf_debug.LocalCLIDebugHook()))
     return TrainConfig(

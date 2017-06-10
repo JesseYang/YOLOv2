@@ -7,3 +7,7 @@ cmdt_pred
 cmdt_images
 output*
 test*
+kitti
+children_draw
+data_doc
+ILSVRC

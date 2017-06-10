@@ -289,9 +289,12 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='directory to save image result', default='output')
     args = parser.parse_args()
 
-    with open(args.test_path) as f:
-        content = f.readlines()
-    image_paths = [line.split(' ')[0] for line in content]
+    test_paths = args.test_path.split(',')
+    image_paths = []
+    for test_path in test_paths:
+        with open(test_path) as f:
+            content = f.readlines()
+        image_paths.extend([line.split(' ')[0] for line in content])
             
     print("Number of images to predict: " + str(len(image_paths)))
 

@@ -192,6 +192,12 @@ class Model(ModelDesc):
                       .BatchNorm('bn7_2')
                       .LeakyReLU('leaky7_2', 0.1)())
 
+            # reduce high_res channel num by 1x1 conv
+            high_res = (LinearWrap(high_res)
+                      .Conv2D('conv7_3', 64, 1, stride=1)
+                      .BatchNorm('bn7_3')
+                      .LeakyReLU('leaky7_3', 0.1)())
+
             # concat high_res and low_res
             # tf.space_to_depth requires NHWC format
             high_res = tf.transpose(high_res, [0, 2, 3, 1])
@@ -201,10 +207,10 @@ class Model(ModelDesc):
             feature = tf.concat([high_res, low_res], axis=1, name="stack_feature")
 
             pred = (LinearWrap(feature)
-                   .Conv2D('conv7_3', 1024, 3, stride=1)
-                   .BatchNorm('bn7_3')
-                   .LeakyReLU('leaky7_3', 0.1)
-                   .Conv2D('conv7_4', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())
+                   .Conv2D('conv7_4', 1024, 3, stride=1)
+                   .BatchNorm('bn7_4')
+                   .LeakyReLU('leaky7_4', 0.1)
+                   .Conv2D('conv7_5', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())
 
 
         # the loss part, confirm that pred is NCHW format

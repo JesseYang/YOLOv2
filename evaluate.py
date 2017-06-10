@@ -3,16 +3,12 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 import os
-import shutil
 import cv2
 import pickle
 import argparse
 from matplotlib import pyplot as plt
 
-from reader import Box, box_iou
-from predict import postprocess
 from cfgs.config import cfg
-
 
 def parse_rec(filename):
     """ Parse a PASCAL VOC xml file """
@@ -252,56 +248,9 @@ def do_python_eval(res_prefix, verbose=True):
 
     return np.mean(aps)
 
-from train import get_pred_func
-
-def generate_pred_result(test_path, pred_dir="result_pred"):
-    if os.path.isdir(pred_dir):
-        shutil.rmtree(pred_dir)
-    os.mkdir(pred_dir)
-
-    with open(test_path) as f:
-        content = f.readlines()
-
-    predict_func = get_pred_func(args.model_path)
-
-    for class_name in cfg.classes_name:
-        with open(os.path.join(pred_dir, class_name + ".txt"), 'w') as f:
-            continue
-
-    print("Number of images to predict: " + str(len(content)))
-            
-    for image_idx, line in enumerate(content):
-        if image_idx % 100 == 0 and image_idx > 0:
-            print(str(image_idx))
-        
-        record = line.split(' ')
-        image_path = record[0]
-        image_id = os.path.basename(image_path).split('.')[0]
-
-        ori_image = cv2.imread(image_path)
-        ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(ori_image, (cfg.img_h, cfg.img_w))
-        image = np.expand_dims(image, axis=0)
-        spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_w // 32, cfg.img_h // 32), dtype=float) == 0
-        predictions = predict_func([image, spec_mask])
-
-        pred_results, img_result = postprocess(predictions, image_path=image_path)
-
-        for class_name in pred_results.keys():
-            with open(os.path.join(pred_dir, class_name + ".txt"), 'a') as f:
-                for box in pred_results[class_name]:
-                    record = [image_id]
-                    record.extend(box)
-                    record = [str(ele) for ele in record]
-                    f.write(' '.join(record) + '\n')
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', help='path of the model waitinf for evaluation.')
     parser.add_argument('--test_path', help='path of the test file', default='voc_2007_test.txt')
-    parser.add_argument('--re_detect', action='store_true', help='whether to calculate the detections')
     args = parser.parse_args()
 
-    if args.re_detect == True:
-        generate_pred_result(args.test_path)
     do_python_eval("result_pred/")

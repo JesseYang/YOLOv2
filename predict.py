@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import shutil
 import numpy as np
 from scipy import misc
 import argparse
@@ -12,60 +13,32 @@ from tensorpack.tfutils.sesscreate import SessionCreatorAdapter, NewSessionCreat
 from tensorflow.python import debug as tf_debug
 
 from tensorpack import *
+
+from reader import Box, box_iou
 from cfgs.config import cfg
 
-def non_maximum_suppression(boxes, overlapThresh):
-    # if there are no boxes, return an empty list
+def nms(boxes, nms_thresh):
     if len(boxes) == 0:
-        return []
-    boxes = np.asarray(boxes).astype("float")
- 
-    # initialize the list of picked indexes 
-    pick = []
- 
-    # grab the coordinates of the bounding boxes
-    conf = boxes[:,0]
-    x1 = boxes[:,1]
-    y1 = boxes[:,2]
-    x2 = boxes[:,3]
-    y2 = boxes[:,4]
- 
-    # compute the area of the bounding boxes and sort the bounding
-    # boxes by the bottom-right y-coordinate of the bounding box
-    area = (x2 - x1 + 1) * (y2 - y1 + 1)
-    idxs = np.argsort(conf)
- 
-    # keep looping while some indexes still remain in the indexes
-    # list
-    while len(idxs) > 0:
-        # grab the last index in the indexes list and add the
-        # index value to the list of picked indexes
-        last = len(idxs) - 1
-        i = idxs[last]
-        pick.append(i)
- 
-        # find the largest (x, y) coordinates for the start of
-        # the bounding box and the smallest (x, y) coordinates
-        # for the end of the bounding box
-        xx1 = np.maximum(x1[i], x1[idxs[:last]])
-        yy1 = np.maximum(y1[i], y1[idxs[:last]])
-        xx2 = np.minimum(x2[i], x2[idxs[:last]])
-        yy2 = np.minimum(y2[i], y2[idxs[:last]])
- 
-        # compute the width and height of the bounding box
-        w = np.maximum(0, xx2 - xx1 + 1)
-        h = np.maximum(0, yy2 - yy1 + 1)
- 
-        # compute the ratio of overlap
-        overlap = (w * h) / area[idxs[:last]]
- 
-        # delete all indexes from the index list that have
-        idxs = np.delete(idxs, np.concatenate(([last],
-            np.where(overlap > overlapThresh)[0])))
- 
-    # return only the bounding boxes that were picked using the
-    # integer data type
-    return boxes[pick].astype("float")
+        return boxes
+
+    det_confs = np.zeros(len(boxes))
+    for i in range(len(boxes)):
+        det_confs[i] = 1 - boxes[i][0]
+
+    sortIds = np.argsort(det_confs)
+
+    out_boxes = []
+    for i in range(len(boxes)):
+        box_i = boxes[sortIds[i]]
+        if box_i[0] > 0:
+            out_boxes.append(box_i)
+            for j in range(i + 1, len(boxes)):
+                box_j = boxes[sortIds[j]]
+                box_1 = Box(*box_i[1:], 'XYXY')
+                box_2 = Box(*box_j[1:], 'XYXY')
+                if box_iou(box_1, box_2) > nms_thresh:
+                    box_j[0] = 0
+    return out_boxes
 
 def postprocess(predictions, image_path=None, image_shape=None):
     if image_path != None:
@@ -131,7 +104,7 @@ def postprocess(predictions, image_path=None, image_shape=None):
     nms_boxes = {}
     if cfg.nms == True:
         for klass, k_boxes in boxes.items():
-            k_boxes = non_maximum_suppression(k_boxes, cfg.nms_th)
+            k_boxes = nms(k_boxes, cfg.nms_th)
             nms_boxes[klass] = k_boxes
     else:
         nms_boxes = boxes
@@ -181,6 +154,19 @@ def postprocess(predictions, image_path=None, image_shape=None):
 
     return nms_boxes, image_result
 
+from train import Model
+
+def get_pred_func(model_path):
+    sess_init = SaverRestore(model_path)
+    model = Model()
+    predict_config = PredictConfig(session_init=sess_init,
+                                   model=model,
+                                   input_names=["input", "spec_mask"],
+                                   output_names=["pred_x", "pred_y", "pred_w", "pred_h", "pred_conf", "pred_prob"])
+
+    predict_func = OfflinePredictor(predict_config) 
+    return predict_func
+
 def predict_image(image_path, predict_func):
     ori_image = cv2.imread(image_path)
     ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
@@ -192,3 +178,52 @@ def predict_image(image_path, predict_func):
     pred_results, img_result = postprocess(predictions, image_path=image_path)
 
     return pred_results, img_result
+
+def generate_pred_result(test_path, pred_dir="result_pred"):
+    if os.path.isdir(pred_dir):
+        shutil.rmtree(pred_dir)
+    os.mkdir(pred_dir)
+
+    with open(test_path) as f:
+        content = f.readlines()
+
+    predict_func = get_pred_func(args.model_path)
+
+    for class_name in cfg.classes_name:
+        with open(os.path.join(pred_dir, class_name + ".txt"), 'w') as f:
+            continue
+
+    print("Number of images to predict: " + str(len(content)))
+            
+    for image_idx, line in enumerate(content):
+        if image_idx % 100 == 0 and image_idx > 0:
+            print(str(image_idx))
+        
+        record = line.split(' ')
+        image_path = record[0]
+        image_id = os.path.basename(image_path).split('.')[0]
+
+        ori_image = cv2.imread(image_path)
+        ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
+        image = cv2.resize(ori_image, (cfg.img_h, cfg.img_w))
+        image = np.expand_dims(image, axis=0)
+        spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_w // 32, cfg.img_h // 32), dtype=float) == 0
+        predictions = predict_func([image, spec_mask])
+
+        pred_results, img_result = postprocess(predictions, image_path=image_path)
+
+        for class_name in pred_results.keys():
+            with open(os.path.join(pred_dir, class_name + ".txt"), 'a') as f:
+                for box in pred_results[class_name]:
+                    record = [image_id]
+                    record.extend(box)
+                    record = [str(ele) for ele in record]
+                    f.write(' '.join(record) + '\n')
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_path', help='path of the model waiting for validation.')
+    parser.add_argument('--test_path', help='path of the test file', default='voc_2007_test.txt')
+    args = parser.parse_args()
+
+    generate_pred_result(args.test_path)

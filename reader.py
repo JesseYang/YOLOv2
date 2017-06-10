@@ -15,11 +15,19 @@ from tensorpack import *
 
 
 class Box():
-    def __init__(self, x, y, w, h):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
+    def __init__(self, p1, p2, p3, p4, mode='XYWH'):
+        if mode == 'XYWH':
+            # parameters: center_x, center_y, width, height
+            self.x = p1
+            self.y = p2
+            self.w = p3
+            self.h = p4
+        if mode == "XYXY":
+            # parameters: xmin, ymin, xmax, ymax
+            self.x = (p1 + p3) / 2
+            self.y = (p2 + p4) / 2
+            self.w = p3 - p1
+            self.h = p4 - p2
 
 def overlap(x1, len1, x2, len2):
     len1_half = len1 / 2

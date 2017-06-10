@@ -154,8 +154,8 @@ class Data(RNGDataFlow):
             # center, width, and height in pixels after resize
             center_w_pixel = (xmin + xmax) * 1.0 / 2 * width_rate
             center_h_pixel = (ymin + ymax) * 1.0 / 2 * height_rate
-            box_w_pixel = (xmax - xmin) * width_rate
-            box_h_pixel = (ymax - ymin) * height_rate
+            box_w_pixel = (xmax - xmin + 1) * width_rate
+            box_h_pixel = (ymax - ymin + 1) * height_rate
 
             # center, width, and height in cells after resize
             eps = 1e-4

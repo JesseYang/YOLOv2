@@ -236,7 +236,7 @@ def do_python_eval(res_prefix, verbose=True):
             continue
         
         rec, prec, ap = voc_eval(
-            filename, annopath, imagesetfile, cls, cachedir, ovthresh=0.5,
+            filename, annopath, imagesetfile, cls, cachedir, ovthresh=cfg.iou_th,
             use_07_metric=use_07_metric)
         aps += [ap]
         if verbose:

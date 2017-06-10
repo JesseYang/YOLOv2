@@ -5,3 +5,4 @@ __pycache__
 train_log
 cmdt_pred
 cmdt_images
+output*

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import os
 import shutil
 import ntpath
@@ -75,7 +74,7 @@ def non_maximum_suppression(boxes, overlapThresh):
     # integer data type
     return boxes[pick].astype("float")
 
-def postprocess(predictions, image_path=None, image_shape=None):
+def postprocess(predictions, image_path=None, image_shape=None, det_th=None):
     if image_path != None:
         ori_image = cv2.imread(image_path)
         ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
@@ -99,7 +98,7 @@ def postprocess(predictions, image_path=None, image_shape=None):
             for gw in range(grid_w):
 
                 k = np.argmax(klass_conf[0, n, :, gh, gw])
-                if klass_conf[0, n, k, gh, gw] < cfg.det_th:
+                if klass_conf[0, n, k, gh, gw] < (det_th or cfg.det_th):
                     continue
 
                 anchor = cfg.anchors[n]
@@ -201,18 +200,18 @@ def draw_result(image, boxes):
 
     return image_result
 
-def predict_image(input_path, output_path, predict_func):
+def predict_image(input_path, output_path, predict_func, det_th):
     ori_image = cv2.imread(input_path)
-    ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(ori_image, (cfg.img_h, cfg.img_w))
+    cvt_clr_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
+    image = cv2.resize(cvt_clr_image, (cfg.img_h, cfg.img_w))
     image = np.expand_dims(image, axis=0)
     spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_w // 32, cfg.img_h // 32), dtype=float) == 0
     predictions = predict_func([image, spec_mask])
 
-    boxes = postprocess(predictions, image_path=input_path)
+    boxes = postprocess(predictions, image_path=input_path, det_th=det_th)
 
-    image_result = draw_result(image, boxes)
-    cv2.imsave(output_path, image_result)
+    image_result = draw_result(ori_image, boxes)
+    cv2.imwrite(output_path, image_result)
 
 def generate_pred_result(image_paths, predict_func, pred_dir):
 
@@ -243,19 +242,19 @@ def generate_pred_result(image_paths, predict_func, pred_dir):
                     record = [str(ele) for ele in record]
                     f.write(' '.join(record) + '\n')
 
-def generate_pred_images(image_paths, predict_func, crop, output_dir):
+def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th):
     for image_idx, image_path in enumerate(image_paths):
         if image_idx % 100 == 0 and image_idx > 0:
             print(str(image_idx))
 
         ori_image = cv2.imread(image_path)
-        ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(ori_image, (cfg.img_h, cfg.img_w))
+        cvt_color_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
+        image = cv2.resize(cvt_color_image, (cfg.img_h, cfg.img_w))
         image = np.expand_dims(image, axis=0)
         spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_w // 32, cfg.img_h // 32), dtype=float) == 0
         predictions = predict_func([image, spec_mask])
 
-        nms_boxes = postprocess(predictions, image_path=image_path)
+        boxes = postprocess(predictions, image_path=image_path, det_th=det_th)
 
         image_name = ntpath.basename(image_path)
         if crop == True:
@@ -263,18 +262,18 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir):
             for klass, k_boxes in boxes.items():
                 for box_idx, k_box in enumerate(k_boxes):
                     [conf, xmin, ymin, xmax, ymax] = k_box
-                    crop_img = image_result[int(ymin):int(ymax),int(xmin):int(xmax)]
+                    crop_img = ori_image[int(ymin):int(ymax),int(xmin):int(xmax)]
 
                     name_part, img_type = image_name.split('.')
                     save_name = name_part + "_" + klass + "_" + str(box_idx) + "." + img_type
                     save_path = os.path.join(output_dir, save_name)
-                    cv2.imsave(save_path, crop_img)
+                    cv2.imwrite(save_path, crop_img)
 
         else:
             # draw box on original image and save
-            image_result = draw_result(ori_image, nms_boxes)
+            image_result = draw_result(ori_image, boxes)
             save_path = os.path.join(output_dir, image_name)
-            cv2.imsave(save_path, image_result)
+            cv2.imwrite(save_path, image_result)
 
 
 if __name__ == '__main__':
@@ -284,12 +283,13 @@ if __name__ == '__main__':
     parser.add_argument('--output_path', help='path of the output image', default='output.png')
     parser.add_argument('--test_path', help='path of the test file', default='voc_2007_test.txt')
     parser.add_argument('--pred_dir', help='directory to save txt result', default='result_pred')
+    parser.add_argument('--det_th', help='detection threshold', default=0.25)
     parser.add_argument('--gen_image', action='store_true')
     parser.add_argument('--crop', action='store_true')
     parser.add_argument('--output_dir', help='directory to save image result', default='output')
     args = parser.parse_args()
 
-    with open(test_path) as f:
+    with open(args.test_path) as f:
         content = f.readlines()
     image_paths = [line.split(' ')[0] for line in content]
             
@@ -297,7 +297,7 @@ if __name__ == '__main__':
 
     predict_func = get_pred_func(args.model_path)
 
-    new_dir = output_dir if gen_image else pred_dir
+    new_dir = args.output_dir if args.gen_image else args.pred_dir
 
     if os.path.isdir(new_dir):
         shutil.rmtree(new_dir)
@@ -305,10 +305,10 @@ if __name__ == '__main__':
 
     if args.input_path != None:
         # predict one image (given the input image path) and save the result image
-        predict_image(args.input_path, args.output_path, predict_func)
+        predict_image(args.input_path, args.output_path, predict_func, args.det_th)
     elif args.gen_image:
         # given the txt file, predict the images and save the images result
-        generate_pred_images(image_paths, predict_func, args.crop, args.output_dir)
+        generate_pred_images(image_paths, predict_func, args.crop, args.output_dir, args.det_th)
     else:
         # given the txt file, predict the images and save the txt result
-        generate_pred_result(image_paths, predict_func, pred_dir)
+        generate_pred_result(image_paths, predict_func, args.pred_dir)

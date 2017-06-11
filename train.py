@@ -375,7 +375,7 @@ class CalMAP(Inferencer):
             predictions = [np.expand_dims(ele, axis=0) for ele in cur_output[0:6]]
             image_shape = cur_output[6]
 
-            pred_results, _ = postprocess(predictions, image_shape=image_shape)
+            pred_results = postprocess(predictions, image_shape=image_shape)
             for class_name in pred_results.keys():
                 if class_name not in self.results.keys():
                     self.results[class_name] = []

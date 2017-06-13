@@ -39,6 +39,8 @@ cfg.test_list = "cmdt_val.txt"
 cfg.det_th = 0.001
 cfg.iou_th = 0.5
 cfg.nms = True
-cfg.nms_th = 0.4
+cfg.nms_th = 0.45
 
-cfg.mAP = False
+cfg.mAP = True
+
+cfg.gt_from_xml = False

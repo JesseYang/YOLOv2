@@ -1,12 +1,15 @@
 # coding: utf-8
 
+import pdb
 import numpy as np
 import xml.etree.ElementTree as ET
 import os
+import shutil
 import cv2
 import pickle
 import argparse
 from matplotlib import pyplot as plt
+from os.path import basename
 
 from cfgs.config import cfg
 
@@ -25,6 +28,7 @@ def parse_rec(filename):
                               int(bbox.find('ymin').text),
                               int(bbox.find('xmax').text),
                               int(bbox.find('ymax').text)]
+
         objects.append(obj_struct)
 
     return objects
@@ -63,15 +67,11 @@ def voc_ap(rec, prec, use_07_metric=False):
     return ap
 
 def voc_eval(detpath,
-             annopath,
-             imagesetfile,
              classname,
              cachedir,
              ovthresh=0.5,
              use_07_metric=False):
     """rec, prec, ap = voc_eval(detpath,
-                                annopath,
-                                imagesetfile,
                                 classname,
                                 [ovthresh],
                                 [use_07_metric])
@@ -80,9 +80,6 @@ def voc_eval(detpath,
 
     detpath: Path to detections
         detpath.format(classname) should produce the detection results file.
-    annopath: Path to annotations
-        annopath.format(imagename) should be the xml annotations file.
-    imagesetfile: Text file containing the list of images, one image per line.
     classname: Category name (duh)
     cachedir: Directory for caching the annotations
     [ovthresh]: Overlap threshold (default = 0.5)
@@ -90,27 +87,57 @@ def voc_eval(detpath,
         (default False)
     """
     # assumes detections are in detpath.format(classname)
-    # assumes annotations are in annopath.format(imagename)
-    # assumes imagesetfile is a text file with each line an image name
     # cachedir caches the annotations in a pickle file
 
     # first load gt
     if not os.path.isdir(cachedir):
         os.mkdir(cachedir)
     cachefile = os.path.join(cachedir, 'annots.pkl')
-    # read list of images
-    with open(imagesetfile, 'r') as f:
-        lines = f.readlines()
-    imagenames = [x.strip() for x in lines]
 
     if not os.path.isfile(cachefile):
         # load annots
-        recs = {}
-        for i, imagename in enumerate(imagenames):
-            recs[imagename] = parse_rec(annopath.format(imagename))
-            if i % 100 == 0:
-                print('Reading annotation for {:d}/{:d}'.format(
-                    i + 1, len(imagenames)))
+
+        if cfg.gt_from_xml:
+            with open(cfg.imagesetfile, 'r') as f:
+                lines = f.readlines()
+            imagenames = [x.strip() for x in lines]
+            recs = {}
+            for i, imagename in enumerate(imagenames):
+                recs[imagename] = parse_rec(cfg.annopath.format(imagename))
+                if i % 100 == 0:
+                    print('Reading annotation for {:d}/{:d}'.format(
+                        i + 1, len(imagenames)))
+
+        else:
+            recs = {}
+            npos = 0
+            with open(cfg.test_list) as f:
+                lines = f.readlines()
+            splitlines = [x.strip().split(' ') for x in lines]
+            image_ids = [os.path.splitext(os.path.basename(x[0]))[0] for x in splitlines]
+            for idx, image_id in enumerate(image_ids):
+                if idx % 100 == 0:
+                    print('Reading annotation for {:d}/{:d}'.format(
+                        idx + 1, len(image_ids)))
+                objects = []
+                record = splitlines[idx]
+                i = 1
+                while i < len(record):
+                    # for each ground truth box
+                    xmin = int(record[i])
+                    ymin = int(record[i + 1])
+                    xmax = int(record[i + 2])
+                    ymax = int(record[i + 3])
+                    class_idx = int(record[i + 4])
+                    i += 5
+
+                    obj_struct = {}
+                    obj_struct['name'] = cfg.classes_name[class_idx]
+                    obj_struct['difficult'] = 0
+                    obj_struct['bbox'] = [xmin, ymin, xmax, ymax]
+                    objects.append(obj_struct)
+                recs[image_id] = objects
+
         # save
         print('Saving cached annotations to {:s}'.format(cachefile))
         with open(cachefile, 'wb') as f:
@@ -123,7 +150,7 @@ def voc_eval(detpath,
     # extract gt objects for this class
     class_recs = {}
     npos = 0
-    for imagename in imagenames:
+    for imagename in recs.keys():
         R = [obj for obj in recs[imagename] if obj['name'] == classname]
         bbox = np.array([x['bbox'] for x in R])
         difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
@@ -133,10 +160,16 @@ def voc_eval(detpath,
                                  'difficult': difficult,
                                  'det': det}
 
+
+
+
     # read dets
     detfile = detpath.format(classname)
-    with open(detfile, 'r') as f:
-        lines = f.readlines()
+    if os.path.isfile(detfile):
+        with open(detfile, 'r') as f:
+            lines = f.readlines()
+    else:
+        lines = []
 
     splitlines = [x.strip().split(' ') for x in lines]
     image_ids = [x[0] for x in splitlines]
@@ -203,40 +236,19 @@ def voc_eval(detpath,
 def do_python_eval(res_prefix, verbose=True):
     _devkit_path = 'VOCdevkit'
     _year = '2007'
-    _classes = ('__background__', # always index 0
-        'aeroplane', 'bicycle', 'bird', 'boat',
-        'bottle', 'bus', 'car', 'cat', 'chair',
-        'cow', 'diningtable', 'dog', 'horse',
-        'motorbike', 'person', 'pottedplant',
-        'sheep', 'sofa', 'train', 'tvmonitor') 
     
     #filename = '/data/hongji/darknet/results/comp4_det_test_{:s}.txt' 
     filename = res_prefix + '{:s}.txt'
-    annopath = os.path.join(
-        _devkit_path,
-        'VOC' + _year,
-        'Annotations',
-        '{:s}.xml')
-    imagesetfile = os.path.join(
-        _devkit_path,
-        'VOC' + _year,
-        'ImageSets',
-        'Main',
-        'test.txt')
-    cachedir = os.path.join(_devkit_path, 'annotations_cache')
+    cachedir = 'annotations_cache'
+    if os.path.isdir(cachedir):
+        shutil.rmtree(cachedir)
     aps = []
-    # The PASCAL VOC metric changed in 2010
-    use_07_metric = True if int(_year) < 2010 else False
-    if verbose:
-        print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
-    # if not os.path.isdir(output_dir):
-    #     os.mkdir(output_dir)
-    for i, cls in enumerate(_classes):
-        if cls == '__background__':
-            continue
+    use_07_metric = True
+
+    for i, cls in enumerate(cfg.classes_name):
         
         rec, prec, ap = voc_eval(
-            filename, annopath, imagesetfile, cls, cachedir, ovthresh=cfg.iou_th,
+            filename, cls, cachedir, ovthresh=cfg.iou_th,
             use_07_metric=use_07_metric)
         aps += [ap]
         if verbose:

@@ -12,3 +12,4 @@ children_draw
 data_doc
 ILSVRC
 VOCdevkit
+annotations_cache

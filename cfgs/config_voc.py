@@ -49,7 +49,7 @@ cfg.classes_num = {'aeroplane': 0, 'bicycle': 1, 'bird': 2, 'boat': 3, 'bottle':
 
 
 cfg.train_list = ["voc_2007_train.txt", "voc_2012_train.txt", "voc_2007_val.txt", "voc_2012_val.txt"]
-cfg.test_list = "voc_2007_test.txt"
+cfg.test_list = "voc_2007_test_without_diff.txt"
 
 cfg.det_th = 0.001
 cfg.iou_th = 0.5
@@ -57,3 +57,7 @@ cfg.nms = True
 cfg.nms_th = 0.45
 
 cfg.mAP = True
+
+cfg.gt_from_xml = True
+cfg.annopath = 'VOCdevkit/VOC2007/Annotations/{:s}.xml'
+cfg.imagesetfile = 'VOCdevkit/VOC2007/ImageSets/Main/test.txt'

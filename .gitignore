@@ -13,3 +13,4 @@ data_doc
 ILSVRC
 VOCdevkit
 annotations_cache
+images_with_boxes

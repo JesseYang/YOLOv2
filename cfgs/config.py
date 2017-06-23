@@ -1,1 +1,1 @@
-from .config_draw import cfg
+from .config_doc import cfg

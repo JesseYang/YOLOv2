@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import glob
 
+from cfgs.config import cfg
+
 # Original code @ferada http://codereview.stackexchange.com/questions/128315/k-means-clustering-algorithm-implementation
 
 best_clusters = []
@@ -126,8 +128,6 @@ def plot_anchors(pascal_anchors):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--grid_w', help='number of grid cells in horizontal direction', default=13)
-    parser.add_argument('--grid_h', help='number of grid cells in vertical direction', default=13)
     parser.add_argument('--data_files', help='comma separated data file list', required=True)
     args = parser.parse_args()
 
@@ -164,8 +164,8 @@ if __name__ == "__main__":
         h = float(s[0])
         w = float(s[1])
 
-        width_rate = args.grid_w / w
-        height_rate = args.grid_h / h
+        width_rate = int(cfg.img_w / cfg.grid_w) / w
+        height_rate = int(cfg.img_h / cfg.grid_h) / h
 
         i = 1
         while i < len(record):

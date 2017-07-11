@@ -1,1 +1,1 @@
-from .config_voc import cfg
+from .config_plate import cfg

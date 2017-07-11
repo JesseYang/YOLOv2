@@ -36,9 +36,11 @@ cfg.classes_num = {'draw': 0}
 cfg.train_list = ["draw_train.txt"]
 cfg.test_list = "draw_val.txt"
 
-cfg.det_th = 0.3
+cfg.det_th = 0.001
 cfg.iou_th = 0.5
 cfg.nms = True
-cfg.nms_th = 0.4
+cfg.nms_th = 0.45
 
-cfg.mAP = False
+cfg.mAP = True
+
+cfg.gt_from_xml = False

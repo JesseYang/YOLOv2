@@ -218,6 +218,8 @@ class Model(ModelDesc):
 
 
         # the loss part, confirm that pred is NCHW format
+        if DATA_FORMAT == "NHWC":
+            pred = tf.transpose(pred, [0, 3, 1, 2])
         pred = tf.reshape(pred, (-1, cfg.n_boxes, cfg.n_classes + 5, self.grid_h, self.grid_w))
         # each predictor has dimension: batch x n_boxes x value x grid_w x grid_h
         # for x, y, w, h, and conf, value is 1; for prob, value is n_classes

@@ -109,11 +109,12 @@ class Model(ModelDesc):
         image_mean = tf.constant([0.485, 0.456, 0.406], dtype=tf.float32)
         image_std = tf.constant([0.229, 0.224, 0.225], dtype=tf.float32)
         image = (image - image_mean) / image_std
-        image = tf.transpose(image, [0, 3, 1, 2])
+        if DATA_FORMAT == "NCHW":
+            image = tf.transpose(image, [0, 3, 1, 2])
 
         # the network part
         with argscope(Conv2D, nl=tf.identity, use_bias=False), \
-             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format="NCHW"):
+             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=DATA_FORMAT):
             # feature extracotr part
             high_res = (LinearWrap(image)
                       .Conv2D('conv1_1', 32, 3, stride=1)
@@ -200,11 +201,14 @@ class Model(ModelDesc):
 
             # concat high_res and low_res
             # tf.space_to_depth requires NHWC format
-            high_res = tf.transpose(high_res, [0, 2, 3, 1])
+            if DATA_FORMAT == "NCHW":
+                high_res = tf.transpose(high_res, [0, 2, 3, 1])
             high_res = tf.space_to_depth(high_res, 2, name="high_res_reshape")
-            high_res = tf.transpose(high_res, [0, 3, 1, 2])
+            if DATA_FORMAT == "NCHW":
+                high_res = tf.transpose(high_res, [0, 3, 1, 2])
             # confirm that the data_format matches with axis
-            feature = tf.concat([high_res, low_res], axis=1, name="stack_feature")
+            concat_axis = 1 if DATA_FORMAT == "NCHW" else 3
+            feature = tf.concat([high_res, low_res], axis=concat_axis, name="stack_feature")
 
             pred = (LinearWrap(feature)
                    .Conv2D('conv7_4', 1024, 3, stride=1)
@@ -457,12 +461,15 @@ def get_config(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default='0')
+    parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.')
+    parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NCHW')
     parser.add_argument('--batch_size', help='batch size')
     parser.add_argument('--load', help='load model')
     parser.add_argument('--multi_scale', action='store_true')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
+
+    DATA_FORMAT = args.data_format
 
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu

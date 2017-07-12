@@ -148,9 +148,9 @@ def postprocess(predictions, image_path=None, image_shape=None, det_th=None):
 
 from train import Model
 
-def get_pred_func(model_path):
-    sess_init = SaverRestore(model_path)
-    model = Model()
+def get_pred_func(args):
+    sess_init = SaverRestore(args.model_path)
+    model = Model(args.data_format)
     predict_config = PredictConfig(session_init=sess_init,
                                    model=model,
                                    input_names=["input", "spec_mask"],
@@ -279,6 +279,7 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', help='path of the model waiting for validation.')
+    parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NCHW')
     parser.add_argument('--input_path', help='path of the input image')
     parser.add_argument('--output_path', help='path of the output image', default='output.png')
     parser.add_argument('--test_path', help='path of the test file', default='voc_2007_test.txt')
@@ -298,7 +299,7 @@ if __name__ == '__main__':
             
     print("Number of images to predict: " + str(len(image_paths)))
 
-    predict_func = get_pred_func(args.model_path)
+    predict_func = get_pred_func(args)
 
     new_dir = args.output_dir if args.gen_image else args.pred_dir
 

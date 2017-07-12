@@ -26,8 +26,9 @@ from evaluate import do_python_eval
 
 class Model(ModelDesc):
 
-    def __init__(self):
+    def __init__(self, data_format="NCHW"):
         super(Model, self).__init__()
+        self.data_format = data_format
 
     def _get_inputs(self):
         return [InputDesc(tf.uint8, [None, None, None, 3], 'input'),
@@ -109,12 +110,12 @@ class Model(ModelDesc):
         image_mean = tf.constant([0.485, 0.456, 0.406], dtype=tf.float32)
         image_std = tf.constant([0.229, 0.224, 0.225], dtype=tf.float32)
         image = (image - image_mean) / image_std
-        if DATA_FORMAT == "NCHW":
+        if self.data_format == "NCHW":
             image = tf.transpose(image, [0, 3, 1, 2])
 
         # the network part
         with argscope(Conv2D, nl=tf.identity, use_bias=False), \
-             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=DATA_FORMAT):
+             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format):
             # feature extracotr part
             high_res = (LinearWrap(image)
                       .Conv2D('conv1_1', 32, 3, stride=1)
@@ -201,13 +202,13 @@ class Model(ModelDesc):
 
             # concat high_res and low_res
             # tf.space_to_depth requires NHWC format
-            if DATA_FORMAT == "NCHW":
+            if self.data_format == "NCHW":
                 high_res = tf.transpose(high_res, [0, 2, 3, 1])
             high_res = tf.space_to_depth(high_res, 2, name="high_res_reshape")
-            if DATA_FORMAT == "NCHW":
+            if self.data_format == "NCHW":
                 high_res = tf.transpose(high_res, [0, 3, 1, 2])
             # confirm that the data_format matches with axis
-            concat_axis = 1 if DATA_FORMAT == "NCHW" else 3
+            concat_axis = 1 if self.data_format == "NCHW" else 3
             feature = tf.concat([high_res, low_res], axis=concat_axis, name="stack_feature")
 
             pred = (LinearWrap(feature)
@@ -218,7 +219,7 @@ class Model(ModelDesc):
 
 
         # the loss part, confirm that pred is NCHW format
-        if DATA_FORMAT == "NHWC":
+        if self.data_format == "NHWC":
             pred = tf.transpose(pred, [0, 3, 1, 2])
         pred = tf.reshape(pred, (-1, cfg.n_boxes, cfg.n_classes + 5, self.grid_h, self.grid_w))
         # each predictor has dimension: batch x n_boxes x value x grid_w x grid_h
@@ -456,7 +457,7 @@ def get_config(args):
     return TrainConfig(
         dataflow=ds_train,
         callbacks=callbacks,
-        model=Model(),
+        model=Model(args.data_format),
         max_epoch=160,
     )
 
@@ -470,8 +471,6 @@ if __name__ == '__main__':
     parser.add_argument('--multi_scale', action='store_true')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
-
-    DATA_FORMAT = args.data_format
 
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu

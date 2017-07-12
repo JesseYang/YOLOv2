@@ -474,13 +474,16 @@ if __name__ == '__main__':
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-    assert args.gpu is not None, "Need to specify a list of gpu for training!"
-    NR_GPU = len(args.gpu.split(','))
-    BATCH_SIZE = int(args.batch_size) // NR_GPU
+    # assert args.gpu is not None, "Need to specify a list of gpu for training!"
+    if args.gpu != None:
+        NR_GPU = len(args.gpu.split(','))
+        BATCH_SIZE = int(args.batch_size) // NR_GPU
+        config.nr_tower = NR_GPU
+    else:
+        BATCH_SIZE = int(args.batch_size)
 
     logger.auto_set_dir()
     config = get_config(args)
     if args.load:
         config.session_init = SaverRestore(args.load)
-    config.nr_tower = NR_GPU
     SyncMultiGPUTrainer(config).train()

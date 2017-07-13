@@ -309,10 +309,10 @@ if __name__ == '__main__':
 
     if args.input_path != None:
         # predict one image (given the input image path) and save the result image
-        predict_image(args.input_path, args.output_path, predict_func, args.det_th)
+        predict_image(args.input_path, args.output_path, predict_func, float(args.det_th))
     elif args.gen_image:
         # given the txt file, predict the images and save the images result
-        generate_pred_images(image_paths, predict_func, args.crop, args.output_dir, args.det_th)
+        generate_pred_images(image_paths, predict_func, args.crop, args.output_dir, float(args.det_th))
     else:
         # given the txt file, predict the images and save the txt result
         generate_pred_result(image_paths, predict_func, args.pred_dir)

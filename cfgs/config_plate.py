@@ -23,7 +23,10 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 10
 
-cfg.anchors = [[1.38278449, 1.47548495], [2.17105324, 1.74288296], [2.46725112, 1.29884392], [3.23908308, 2.89054875], [3.63421207, 1.58081144]]
+
+cfg.anchors = [[1.3400635,1.46238601], [2.12739011, 1.70534195], [2.46009702, 1.29434756], [3.20503965, 2.89700797], [3.5956098, 1.58864183]]
+
+#cfg.anchors = [[1.38278449, 1.47548495], [2.17105324, 1.74288296], [2.46725112, 1.29884392], [3.23908308, 2.89054875], [3.63421207, 1.58081144]]
 
 # ignore boxes which are too small (height or width smaller than size_th * 32)
 cfg.size_th = 0.1
@@ -34,9 +37,9 @@ cfg.classes_num = {'plate': 0}
 
 
 cfg.train_list = ["plate_temp.txt"]
-cfg.test_list = "plate_test.txt"
+cfg.test_list = "plate_temp.txt"
 
-cfg.det_th = 0.3
+cfg.det_th = 0.1
 cfg.iou_th = 0.5
 cfg.nms = True
 cfg.nms_th = 0.4

@@ -1,1 +1,1 @@
-from .config_plate import cfg
+from .config_multi import cfg

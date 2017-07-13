@@ -34,7 +34,7 @@ cfg.classes_num = {'plate': 0}
 
 
 cfg.train_list = ["plate_temp.txt"]
-cfg.test_list = "plate_test.txt"
+cfg.test_list = "plate_temp.txt"
 
 cfg.det_th = 0.3
 cfg.iou_th = 0.5

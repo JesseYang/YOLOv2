@@ -403,11 +403,11 @@ class CalMAP(Inferencer):
         return { "mAP": mAP, "test_loss": np.mean(self.loss) }
 
 
-def get_data(train_or_test, multi_scale):
+def get_data(train_or_test, multi_scale, batch_size):
     isTrain = train_or_test == 'train'
 
     filename_list = cfg.train_list if isTrain else cfg.test_list
-    ds = Data(filename_list, shuffle=isTrain, flip=isTrain, affine_trans=isTrain, use_multi_scale=isTrain and multi_scale, period=BATCH_SIZE*10)
+    ds = Data(filename_list, shuffle=isTrain, flip=isTrain, affine_trans=isTrain, use_multi_scale=isTrain and multi_scale, period=batch_size*10)
 
     if isTrain:
         augmentors = [
@@ -431,18 +431,25 @@ def get_data(train_or_test, multi_scale):
             imgaug.ToUint8()
         ]
     ds = AugmentImageComponent(ds, augmentors)
-    ds = BatchData(ds, BATCH_SIZE, remainder=not isTrain)
+    ds = BatchData(ds, batch_size, remainder=not isTrain)
     if isTrain and multi_scale == False:
         ds = PrefetchDataZMQ(ds, min(6, multiprocessing.cpu_count()))
     return ds
 
 
 def get_config(args):
-    ds_train = get_data('train', args.multi_scale)
-    ds_test = get_data('test', False)
+    if args.gpu != None:
+        NR_GPU = len(args.gpu.split(','))
+        batch_size = int(args.batch_size) // NR_GPU
+    else:
+        batch_size = int(args.batch_size)
+
+    ds_train = get_data('train', args.multi_scale, batch_size)
+    ds_test = get_data('test', False, batch_size)
 
     callbacks = [
       ModelSaver(),
+
       ScheduledHyperParamSetter('learning_rate',
                                 ##det_th=0.3 loss_summary=0.2630
                                 #[(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 4e-4), (15, 5e-4), (30, 6e-4), (60, 7e-4),(90, 6e-5), (120,3e-5), (150,1e-5)]),
@@ -480,15 +487,11 @@ if __name__ == '__main__':
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
     # assert args.gpu is not None, "Need to specify a list of gpu for training!"
-    if args.gpu != None:
-        NR_GPU = len(args.gpu.split(','))
-        BATCH_SIZE = int(args.batch_size) // NR_GPU
-        config.nr_tower = NR_GPU
-    else:
-        BATCH_SIZE = int(args.batch_size)
-
     logger.auto_set_dir()
     config = get_config(args)
+    if args.gpu != None:
+        config.nr_tower = len(args.gpu.split(','))
+
     if args.load:
         config.session_init = SaverRestore(args.load)
     SyncMultiGPUTrainer(config).train()

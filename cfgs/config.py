@@ -1,1 +1,1 @@
-from .config_cmdt import cfg
+from .config_multi import cfg

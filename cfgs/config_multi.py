@@ -25,24 +25,13 @@ cfg.max_box_num = 10
 
 
 
-##### need param for cmdt data preprocessing
-cfg.ROOT_DATA_DIR = "multi_cmdt"
-# XML_PATH = 'data_plate/plate.xml'
-cfg.test_ratio = 0.1
-cfg.train_file_name = "multi_train.txt"
-cfg.test_file_name = "multi_test.txt"
-
-
-
 
 cfg.anchors = [[2.28287839, 2.74430641], [2.69750187, 5.08323749], [4.46949321, 3.50367429], [4.78591135, 5.93875096], [7.24740245, 7.34431521]]
 
 
 
-
-##### need param for cmdt data preprocessing
 cfg.ROOT_DATA_DIR = "multi_cmdt"
-# XML_PATH = 'data_plate/plate.xml'
+
 cfg.test_ratio = 0.1
 cfg.train_file_name = "multi_train.txt"
 cfg.test_file_name = "multi_test.txt"

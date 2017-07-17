@@ -23,7 +23,28 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 10
 
+
+cfg.learning_rate = [(0,1e-4),(1,2e-4),(5,3e-4),(10,4e-4),(20,6e-4),(30,1e-3),(40,1e-4),(105,1e-5)]
+#cfg.learning_rate = [(0, 1e-4), (20, 2e-4), (50, 3e-4), (100, 4e-4), (150, 5e-4), (200,3e-3), (300,2e-3)]
+cfg.max_epoch = 160
+
+
+
 cfg.anchors = [[2.28287839, 2.74430641], [2.69750187, 5.08323749], [4.46949321, 3.50367429], [4.78591135, 5.93875096], [7.24740245, 7.34431521]]
+
+
+
+
+##### need param for cmdt data preprocessing
+cfg.ROOT_DATA_DIR = "multi_cmdt"
+# XML_PATH = 'data_plate/plate.xml'
+cfg.test_ratio = 0.1
+cfg.train_file_name = "multi_train.txt"
+cfg.test_file_name = "multi_test.txt"
+
+
+
+
 
 # ignore boxes which are too small (height or width smaller than size_th * 32)
 cfg.size_th = 0.1

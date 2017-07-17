@@ -449,7 +449,7 @@ def get_config(args):
 
     callbacks = [
       ModelSaver(),
-      ScheduledHyperParamSetter('learning_rate',[(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 4e-4), (15, 5e-4), (30, 6e-4), (60, 7e-4),(90, 6e-5), (110,3e-5), (150,2e-5), (200,1e-5)]),
+      ScheduledHyperParamSetter('learning_rate',cfg.learning_rate),
       ScheduledHyperParamSetter('unseen_scale',
                                 [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
       HumanHyperParamSetter('learning_rate'),
@@ -463,7 +463,7 @@ def get_config(args):
         dataflow=ds_train,
         callbacks=callbacks,
         model=Model(args.data_format),
-        max_epoch=160,
+        max_epoch=cfg.max_epoch,
     )
 
 

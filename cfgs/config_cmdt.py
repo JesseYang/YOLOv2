@@ -25,6 +25,11 @@ cfg.max_box_num = 10
 
 cfg.anchors = [[2.14988038, 2.60902761], [2.85186221, 5.39543599], [4.69482022, 3.65249222], [5.61036974, 6.57531354], [8.75808615, 8.75500105]]
 
+
+
+
+
+
 # ignore boxes which are too small (height or width smaller than size_th * 32)
 cfg.size_th = 0.1
 

@@ -23,7 +23,7 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 10
 
-cfg.anchors = [[1.33119195, 1.15934275], [2.06045752, 1.6672473], [2.8275166, 2.38338939], [4.10338642, 3.1694666], [6.50620722, 6.22560465]]
+cfg.anchors = [[1.56661581, 1.27376588], [2.34958704, 2.02082615], [3.46004604, 2.64250903], [4.43872083, 3.78186485], [6.63968814, 6.67205063]]
 
 # ignore boxes which are too small (height or width smaller than size_th * 32)
 cfg.size_th = 0.1

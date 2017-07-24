@@ -8,7 +8,7 @@ cmdt_images
 output*
 test*
 kitti
-children_draw
+children_draw*
 data_doc
 ILSVRC
 VOCdevkit

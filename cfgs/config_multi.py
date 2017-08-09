@@ -23,20 +23,44 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 10
 
-cfg.anchors = [[1.56661581, 1.27376588], [2.34958704, 2.02082615], [3.46004604, 2.64250903], [4.43872083, 3.78186485], [6.63968814, 6.67205063]]
 
-cfg.max_epoch = 160
+
+##### need param for cmdt data preprocessing
+cfg.ROOT_DATA_DIR = "multi_cmdt"
+# XML_PATH = 'data_plate/plate.xml'
+cfg.test_ratio = 0.1
+cfg.train_file_name = "multi_train.txt"
+cfg.test_file_name = "multi_test.txt"
+
+
+
+
+cfg.anchors = [[2.28287839, 2.74430641], [2.69750187, 5.08323749], [4.46949321, 3.50367429], [4.78591135, 5.93875096], [7.24740245, 7.34431521]]
+
+
+
+
+##### need param for cmdt data preprocessing
+cfg.ROOT_DATA_DIR = "multi_cmdt"
+# XML_PATH = 'data_plate/plate.xml'
+cfg.test_ratio = 0.1
+cfg.train_file_name = "multi_train.txt"
+cfg.test_file_name = "multi_test.txt"
+
+
+
+
 
 # ignore boxes which are too small (height or width smaller than size_th * 32)
 cfg.size_th = 0.1
 
-cfg.classes_name =  ["draw"]
+cfg.classes_name =  ["good"]
 
-cfg.classes_num = {'draw': 0}
+cfg.classes_num = {'good': 0}
 
 
-cfg.train_list = ["draw_train.txt"]
-cfg.test_list = "draw_val.txt"
+cfg.train_list = ["multi_train.txt"]
+cfg.test_list = "multi_test.txt"
 
 cfg.det_th = 0.001
 cfg.iou_th = 0.5

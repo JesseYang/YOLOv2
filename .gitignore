@@ -8,10 +8,12 @@ cmdt_images
 output*
 test*
 kitti
-children_draw
+children_draw*
 data_doc
 ILSVRC
 VOCdevkit
 annotations_cache
 images_with_boxes
 20170707
+multi_*
+plate*

@@ -242,7 +242,7 @@ def generate_pred_result(image_paths, predict_func, pred_dir):
                     record = [str(ele) for ele in record]
                     f.write(' '.join(record) + '\n')
 
-def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th):
+def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, enlarge_ratio=1.3):
     for image_idx, image_path in enumerate(image_paths):
         if image_idx % 100 == 0 and image_idx > 0:
             print(str(image_idx))
@@ -262,6 +262,14 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th):
             for klass, k_boxes in boxes.items():
                 for box_idx, k_box in enumerate(k_boxes):
                     [conf, xmin, ymin, xmax, ymax] = k_box
+                    xcenter = (xmin + xmax) / 2
+                    ycenter = (ymin + ymax) / 2
+                    width = (xmax - xmin) * enlarge_ratio
+                    height = (ymax - ymin) * enlarge_ratio
+                    xmin = np.max([0, int(xcenter - width / 2)])
+                    ymin = np.max([0, int(ycenter - height / 2)])
+                    xmax = np.min([ori_image.shape[1] - 1, int(xcenter + width / 2)])
+                    ymax = np.min([ori_image.shape[0] - 1, int(ycenter + height / 2)])
                     crop_img = ori_image[int(ymin):int(ymax),int(xmin):int(xmax)]
 
                     name_part, img_type = image_name.split('.')
@@ -295,7 +303,7 @@ if __name__ == '__main__':
     for test_path in test_paths:
         with open(test_path) as f:
             content = f.readlines()
-        image_paths.extend([line.split(' ')[0] for line in content])
+        image_paths.extend([line.split(' ')[0].strip() for line in content])
             
     print("Number of images to predict: " + str(len(image_paths)))
 

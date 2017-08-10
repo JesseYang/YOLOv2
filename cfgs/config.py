@@ -1,1 +1,1 @@
-from .config_draw import cfg
+from .config_coco_voc import cfg

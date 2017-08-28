@@ -15,5 +15,7 @@ VOCdevkit
 annotations_cache
 images_with_boxes
 20170707
+20170822
 multi_*
 plate*
+head_hand_output

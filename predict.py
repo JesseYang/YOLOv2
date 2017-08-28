@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import uuid
 import shutil
 import ntpath
 import numpy as np
@@ -280,7 +281,8 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, en
         else:
             # draw box on original image and save
             image_result = draw_result(ori_image, boxes)
-            save_path = os.path.join(output_dir, image_name)
+            save_path = os.path.join(output_dir, str(uuid.uuid4()) + ".jpg")
+            # cv2.imwrite(save_path, image_result)
             cv2.imwrite(save_path, image_result)
 
 

@@ -54,7 +54,11 @@ Found at iteration 56 with best average IoU: 0.5153392451551813
 
 '''
 
-cfg.anchors = [[0.4930636, 0.83190876], [1.34735609, 2.61651251], [2.83276422, 6.79906007], [5.08603695, 3.11557501], [8.82067671, 9.3150539]]
+cfg.anchors = [[  0.52340679,   0.89816029],
+               [  1.62204465,   2.80834417],
+               [  3.12342422,   7.01347654],
+               [  7.18121243,   4.15297634],
+               [  9.25215845,  10.1937983 ]]
 
 cfg.classes_name =  ["aeroplane", "bicycle", "bird", "boat",
                      "bottle", "bus", "car", "cat",
@@ -67,11 +71,11 @@ cfg.classes_num = {'aeroplane': 0, 'bicycle': 1, 'bird': 2, 'boat': 3, 'bottle':
 	               'horse': 12, 'motorbike': 13, 'person': 14, 'pottedplant': 15, 'sheep': 16,
 	               'sofa': 17, 'train': 18, 'tvmonitor': 19}
 
-#cfg.train_list = ["coco_voc_train.txt", "coco_voc_val.txt", "voc_2007_train.txt", "voc_2012_train.txt", "voc_2007_val.txt", "voc_2012_val.txt"]
-#cfg.test_list = "voc_2007_test_without_diff.txt"
+cfg.train_list = ["coco_voc_train.txt", "coco_voc_val.txt", "voc_2007_train.txt", "voc_2012_train.txt", "voc_2007_val.txt", "voc_2012_val.txt"]
+cfg.test_list = "voc_2007_test_without_diff.txt"
 
-cfg.train_list = ["yolo_code_test2.txt"]
-cfg.test_list = "yolo_code_test2.txt"
+#cfg.train_list = ["yolo_code_test2.txt"]
+#cfg.test_list = "yolo_code_test2.txt"
 
 cfg.det_th = 0.001
 cfg.iou_th = 0.5
@@ -80,7 +84,7 @@ cfg.nms_th = 0.45
 
 cfg.mAP = True
 
-cfg.max_epoch = 800
+cfg.max_epoch = 160
 cfg.size_th = 0.1
 
 cfg.gt_from_xml = False

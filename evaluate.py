@@ -8,7 +8,7 @@ import shutil
 import cv2
 import pickle
 import argparse
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from os.path import basename
 
 from cfgs.config import cfg

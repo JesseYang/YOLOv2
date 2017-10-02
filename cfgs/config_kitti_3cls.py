@@ -24,20 +24,20 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 20
 
-cfg.anchors = [[0.5687777, 0.55382309], [1.11584668, 2.45863625], [1.2741393, 0.82744712], [2.51935263, 1.44592264], [4.60370374, 2.7354634]]
+cfg.anchors = [[0.54424761, 0.47423913], [0.94360778, 0.91102493], [1.69511006, 1.18436854], [2.9239961, 1.52414664], [3.81888866, 2.7836075]]
 
 # ignore boxes which are too small (height or width smaller than size_th * 32)
 cfg.size_th = 0.1
 
-cfg.classes_name =  ['Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram', 'Misc']
+cfg.classes_name =  ['Car', 'Pedestrian', 'Cyclist']
 cfg.n_classes = len(cfg.classes_name)
 
 cfg.classes_num = {}
 for idx, class_name in enumerate(cfg.classes_name):
     cfg.classes_num[class_name] = idx
 
-cfg.train_list = ["kitti_train.txt"]
-cfg.test_list = "kitti_test.txt"
+cfg.train_list = ["kitti_3cls_train.txt"]
+cfg.test_list = "kitti_3cls_test.txt"
 
 cfg.det_th = 0.001
 cfg.iou_th = 0.5

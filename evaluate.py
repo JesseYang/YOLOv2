@@ -124,10 +124,10 @@ def voc_eval(detpath,
                 i = 1
                 while i < len(record):
                     # for each ground truth box
-                    xmin = int(record[i])
-                    ymin = int(record[i + 1])
-                    xmax = int(record[i + 2])
-                    ymax = int(record[i + 3])
+                    xmin = int(np.round(float(record[i])))
+                    ymin = int(np.round(float(record[i + 1])))
+                    xmax = int(np.round(float(record[i + 2])))
+                    ymax = int(np.round(float(record[i + 3])))
                     class_idx = int(record[i + 4])
                     i += 5
 

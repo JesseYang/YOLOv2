@@ -54,11 +54,7 @@ Found at iteration 56 with best average IoU: 0.5153392451551813
 
 '''
 
-cfg.anchors = [[  0.52340679,   0.89816029],
-               [  1.62204465,   2.80834417],
-               [  3.12342422,   7.01347654],
-               [  7.18121243,   4.15297634],
-               [  9.25215845,  10.1937983 ]]
+cfg.anchors = [[0.3988119, 0.609405], [0.78872602, 1.75459139], [2.00586473, 2.71944415], [3.30971659, 6.17074759], [8.93507659, 8.99826148]]
 
 cfg.classes_name =  ["aeroplane", "bicycle", "bird", "boat",
                      "bottle", "bus", "car", "cat",
@@ -74,9 +70,6 @@ cfg.classes_num = {'aeroplane': 0, 'bicycle': 1, 'bird': 2, 'boat': 3, 'bottle':
 cfg.train_list = ["coco_voc_train.txt", "coco_voc_val.txt", "voc_2007_train.txt", "voc_2012_train.txt", "voc_2007_val.txt", "voc_2012_val.txt"]
 cfg.test_list = "voc_2007_test_without_diff.txt"
 
-#cfg.train_list = ["yolo_code_test2.txt"]
-#cfg.test_list = "yolo_code_test2.txt"
-
 cfg.det_th = 0.001
 cfg.iou_th = 0.5
 cfg.nms = True
@@ -87,7 +80,6 @@ cfg.mAP = True
 cfg.max_epoch = 160
 cfg.size_th = 0.1
 
-cfg.gt_from_xml = False
-#cfg.gt_from_xml = True
-#cfg.annopath = 'VOCdevkit/VOC2007/Annotations/{:s}.xml'
-#cfg.imagesetfile = 'VOCdevkit/VOC2007/ImageSets/Main/test.txt'
+cfg.gt_from_xml = True
+cfg.annopath = 'VOCdevkit/VOC2007/Annotations/{:s}.xml'
+cfg.imagesetfile = 'VOCdevkit/VOC2007/ImageSets/Main/test.txt'

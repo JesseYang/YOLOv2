@@ -261,7 +261,7 @@ class Model(ModelDesc):
 
         grid_ary_y = tf.cast(tf.range(self.grid_h), tf.float32)
         grid_tensor_y = tf.tile(grid_ary_y, [self.batch_size * cfg.n_boxes * self.grid_w])
-        grid_tensor_y = tf.reshape(grid_tensor_y, (-1, cfg.n_boxes, self.grid_h, self.grid_w))
+        grid_tensor_y = tf.reshape(grid_tensor_y, (-1, cfg.n_boxes, self.grid_w, self.grid_h))
         grid_tensor_y = tf.transpose(grid_tensor_y, (0, 1, 3, 2))
 
         anchor_ary = tf.cast(tf.constant(cfg.anchors), tf.float32)
@@ -478,13 +478,17 @@ if __name__ == '__main__':
     parser.add_argument('--load', help='load model')
     parser.add_argument('--multi_scale', action='store_true')
     parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--log_dir', help="directory of logging", default=None)
     args = parser.parse_args()
 
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
     # assert args.gpu is not None, "Need to specify a list of gpu for training!"
-    logger.auto_set_dir()
+    if args.log_dir != None:
+        logger.set_logger_dir(os.path.join("train_log", args.log_dir))
+    else:
+        logger.auto_set_dir()
     config = get_config(args)
     if args.gpu != None:
         config.nr_tower = len(args.gpu.split(','))

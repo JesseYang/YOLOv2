@@ -247,8 +247,9 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, en
     for image_idx, image_path in enumerate(image_paths):
         if image_idx % 100 == 0 and image_idx > 0:
             print(str(image_idx))
-
+        print(image_path)
         ori_image = cv2.imread(image_path)
+
         cvt_color_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
         image = cv2.resize(cvt_color_image, (cfg.img_h, cfg.img_w))
         image = np.expand_dims(image, axis=0)

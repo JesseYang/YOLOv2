@@ -239,7 +239,8 @@ def generate_gt_result(test_path, gt_dir="result_gt", overwrite=True):
 
     for line in content:
         record = line.split(' ')
-        image_id = os.path.basename(record[0]).split('.')[0]
+        # image_id = os.path.basename(record[0]).split('.')[0]
+        image_id = record[0]
         i = 1
         
         gt_cur_img = {}

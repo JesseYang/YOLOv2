@@ -114,7 +114,7 @@ def voc_eval(detpath,
             with open(cfg.test_list) as f:
                 lines = f.readlines()
             splitlines = [x.strip().split(' ') for x in lines]
-            image_ids = [os.path.splitext(os.path.basename(x[0]))[0] for x in splitlines]
+            image_ids = [x[0] for x in splitlines]
             for idx, image_id in enumerate(image_ids):
                 if idx % 100 == 0:
                     print('Reading annotation for {:d}/{:d}'.format(

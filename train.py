@@ -369,14 +369,14 @@ class CalMAP(Inferencer):
         self.loss = []
         self.cur_image_idx = 0
 
-    def _datapoint(self, output):
+    def _on_fetches(self, output):
         self.loss.append(output[7])
         output = output[0:7]
         for i in range(output[0].shape[0]):
             # for each ele in the batch
             image_path = self.image_path_list[self.cur_image_idx]
             self.cur_image_idx += 1
-            image_id = os.path.basename(image_path).split('.')[0]
+            image_id = image_path
 
             cur_output = [ele[i] for ele in output]
             predictions = [np.expand_dims(ele, axis=0) for ele in cur_output[0:6]]

@@ -206,7 +206,7 @@ def predict_image(input_path, output_path, predict_func, det_th):
     cvt_clr_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
     image = cv2.resize(cvt_clr_image, (cfg.img_h, cfg.img_w))
     image = np.expand_dims(image, axis=0)
-    spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_w // 32, cfg.img_h // 32), dtype=float) == 0
+    spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_h // 32, cfg.img_w // 32), dtype=float) == 0
     predictions = predict_func([image, spec_mask])
 
     boxes = postprocess(predictions, image_path=input_path, det_th=det_th)
@@ -230,7 +230,7 @@ def generate_pred_result(image_paths, predict_func, pred_dir):
         ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
         image = cv2.resize(ori_image, (cfg.img_h, cfg.img_w))
         image = np.expand_dims(image, axis=0)
-        spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_w // 32, cfg.img_h // 32), dtype=float) == 0
+        spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_h // 32, cfg.img_w // 32), dtype=float) == 0
         predictions = predict_func([image, spec_mask])
 
         pred_results = postprocess(predictions, image_path=image_path)
@@ -251,9 +251,9 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, en
         ori_image = cv2.imread(image_path)
 
         cvt_color_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(cvt_color_image, (cfg.img_h, cfg.img_w))
+        image = cv2.resize(cvt_color_image, (cfg.img_w, cfg.img_h))
         image = np.expand_dims(image, axis=0)
-        spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_w // 32, cfg.img_h // 32), dtype=float) == 0
+        spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_h // 32, cfg.img_w // 32), dtype=float) == 0
         predictions = predict_func([image, spec_mask])
 
         boxes = postprocess(predictions, image_path=image_path, det_th=det_th)

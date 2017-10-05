@@ -9,7 +9,11 @@ import copy
 import logging
 import cv2
 import json
-from cfgs.config import cfg
+
+try:
+    from cfgs.config import cfg
+except Exception:
+    from .cfgs.config import cfg
 
 from tensorpack import *
 

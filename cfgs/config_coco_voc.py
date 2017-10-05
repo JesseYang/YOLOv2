@@ -16,7 +16,8 @@ cfg.threshold = 0.6
 
 cfg.weight_decay = 5e-4
 cfg.unseen_scale = 0.01
-cfg.unseen_epochs = 1
+# cfg.unseen_epochs = 1
+cfg.unseen_epochs = 0
 cfg.coord_scale = 1
 cfg.object_scale = 5
 cfg.class_scale = 1
@@ -77,9 +78,10 @@ cfg.nms_th = 0.45
 
 cfg.mAP = True
 
-cfg.max_epoch = 160
+cfg.max_epoch = 60
 cfg.size_th = 0.1
 
 cfg.gt_from_xml = True
+cfg.gt_format = "voc"
 cfg.annopath = 'VOCdevkit/VOC2007/Annotations/{:s}.xml'
 cfg.imagesetfile = 'VOCdevkit/VOC2007/ImageSets/Main/test.txt'

@@ -52,6 +52,4 @@ cfg.mAP = True
 cfg.max_epoch = 160
 cfg.size_th = 0.1
 
-cfg.gt_from_xml = False
-#cfg.annopath = 'VOCdevkit/VOC2007/Annotations/{:s}.xml'
-#cfg.imagesetfile = 'VOCdevkit/VOC2007/ImageSets/Main/test.txt'
+cfg.gt_format = "custom"

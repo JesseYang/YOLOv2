@@ -376,7 +376,7 @@ class CalMAP(Inferencer):
             # for each ele in the batch
             image_path = self.image_path_list[self.cur_image_idx]
             self.cur_image_idx += 1
-            image_id = image_path
+            image_id = os.path.basename(image_path).split('.')[0] if cfg.gt_format == "voc" else image_path
 
             cur_output = [ele[i] for ele in output]
             predictions = [np.expand_dims(ele, axis=0) for ele in cur_output[0:6]]
@@ -452,7 +452,8 @@ def get_config(args):
 
 
       ScheduledHyperParamSetter('learning_rate',
-                                [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (70, 1e-4), (110, 1e-5)]),
+                                # [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (70, 1e-4), (110, 1e-5)]),
+                                [(0, 1e-4), (30, 1e-5)]),
       ScheduledHyperParamSetter('unseen_scale',
                                 [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
       HumanHyperParamSetter('learning_rate'),

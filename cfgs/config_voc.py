@@ -61,5 +61,6 @@ cfg.nms_th = 0.45
 cfg.mAP = True
 
 cfg.gt_from_xml = True
+cfg.gt_format = "voc"
 cfg.annopath = 'VOCdevkit/VOC2007/Annotations/{:s}.xml'
 cfg.imagesetfile = 'VOCdevkit/VOC2007/ImageSets/Main/test.txt'

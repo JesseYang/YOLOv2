@@ -97,7 +97,8 @@ def voc_eval(detpath,
     if not os.path.isfile(cachefile):
         # load annots
 
-        if cfg.gt_from_xml:
+        # if cfg.gt_from_xml:
+        if cfg.gt_format == "voc":
             with open(cfg.imagesetfile, 'r') as f:
                 lines = f.readlines()
             imagenames = [x.strip() for x in lines]

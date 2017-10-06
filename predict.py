@@ -15,8 +15,12 @@ from tensorflow.python import debug as tf_debug
 
 from tensorpack import *
 
-from reader import Box, box_iou
-from cfgs.config import cfg
+try:
+    from reader import Box, box_iou
+    from cfgs.config import cfg
+except Exception:
+    from .reader import Box, box_iou
+    from .cfgs.config import cfg
 
 def non_maximum_suppression(boxes, overlapThresh):
     # if there are no boxes, return an empty list
@@ -147,7 +151,10 @@ def postprocess(predictions, image_path=None, image_shape=None, det_th=None):
     
     return nms_boxes
 
-from train import Model
+try:
+    from train import Model
+except Exception:
+    from .train import Model
 
 def get_pred_func(args):
     sess_init = SaverRestore(args.model_path)
@@ -204,7 +211,7 @@ def draw_result(image, boxes):
 def predict_image(input_path, output_path, predict_func, det_th):
     ori_image = cv2.imread(input_path)
     cvt_clr_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
-    image = cv2.resize(cvt_clr_image, (cfg.img_h, cfg.img_w))
+    image = cv2.resize(cvt_clr_image, (cfg.img_w, cfg.img_h))
     image = np.expand_dims(image, axis=0)
     spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_h // 32, cfg.img_w // 32), dtype=float) == 0
     predictions = predict_func([image, spec_mask])
@@ -228,7 +235,7 @@ def generate_pred_result(image_paths, predict_func, pred_dir):
 
         ori_image = cv2.imread(image_path)
         ori_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(ori_image, (cfg.img_h, cfg.img_w))
+        image = cv2.resize(ori_image, (cfg.img_w, cfg.img_h))
         image = np.expand_dims(image, axis=0)
         spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_h // 32, cfg.img_w // 32), dtype=float) == 0
         predictions = predict_func([image, spec_mask])
@@ -293,7 +300,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NCHW')
     parser.add_argument('--input_path', help='path of the input image')
     parser.add_argument('--output_path', help='path of the output image', default='output.png')
-    parser.add_argument('--test_path', help='path of the test file', default='voc_2007_test.txt')
+    parser.add_argument('--test_path', help='path of the test file', default=None)
     parser.add_argument('--pred_dir', help='directory to save txt result', default='result_pred')
     parser.add_argument('--det_th', help='detection threshold', default=0.25)
     parser.add_argument('--gen_image', action='store_true')
@@ -301,14 +308,6 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='directory to save image result', default='output')
     args = parser.parse_args()
 
-    test_paths = args.test_path.split(',')
-    image_paths = []
-    for test_path in test_paths:
-        with open(test_path) as f:
-            content = f.readlines()
-        image_paths.extend([line.split(' ')[0].strip() for line in content])
-            
-    print("Number of images to predict: " + str(len(image_paths)))
 
     predict_func = get_pred_func(args)
 
@@ -321,9 +320,18 @@ if __name__ == '__main__':
     if args.input_path != None:
         # predict one image (given the input image path) and save the result image
         predict_image(args.input_path, args.output_path, predict_func, float(args.det_th))
-    elif args.gen_image:
-        # given the txt file, predict the images and save the images result
-        generate_pred_images(image_paths, predict_func, args.crop, args.output_dir, float(args.det_th))
-    else:
-        # given the txt file, predict the images and save the txt result
-        generate_pred_result(image_paths, predict_func, args.pred_dir)
+    elif args.test_path != None:
+        test_paths = args.test_path.split(',')
+        image_paths = []
+        for test_path in test_paths:
+            with open(test_path) as f:
+                content = f.readlines()
+            image_paths.extend([line.split(' ')[0].strip() for line in content])
+                
+        print("Number of images to predict: " + str(len(image_paths)))
+        if args.gen_image:
+            # given the txt file, predict the images and save the images result
+            generate_pred_images(image_paths, predict_func, args.crop, args.output_dir, float(args.det_th))
+        else:
+            # given the txt file, predict the images and save the txt result
+            generate_pred_result(image_paths, predict_func, args.pred_dir)

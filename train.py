@@ -21,13 +21,13 @@ from tensorpack.tfutils.sesscreate import SessionCreatorAdapter, NewSessionCreat
 from tensorflow.python import debug as tf_debug
 
 try:
-    from cfgs.config import cfg
-    from reader import Data, generate_gt_result
-    from evaluate import do_python_eval
-except Exception:
     from .cfgs.config import cfg
     from .reader import Data, generate_gt_result
     from .evaluate import do_python_eval
+except Exception:
+    from cfgs.config import cfg
+    from reader import Data, generate_gt_result
+    from evaluate import do_python_eval
 
 class Model(ModelDesc):
 
@@ -341,9 +341,9 @@ class Model(ModelDesc):
         return tf.train.MomentumOptimizer(lr, 0.9, use_nesterov=True)
 
 try:
-    from predict import postprocess
-except Exception:
     from .predict import postprocess
+except Exception:
+    from predict import postprocess
 
 class CalMAP(Inferencer):
     def __init__(self, test_path):

@@ -16,11 +16,11 @@ from tensorflow.python import debug as tf_debug
 from tensorpack import *
 
 try:
-    from reader import Box, box_iou
-    from cfgs.config import cfg
-except Exception:
     from .reader import Box, box_iou
     from .cfgs.config import cfg
+except Exception:
+    from reader import Box, box_iou
+    from cfgs.config import cfg
 
 def non_maximum_suppression(boxes, overlapThresh):
     # if there are no boxes, return an empty list
@@ -152,9 +152,9 @@ def postprocess(predictions, image_path=None, image_shape=None, det_th=None):
     return nms_boxes
 
 try:
-    from train import Model
-except Exception:
     from .train import Model
+except Exception:
+    from train import Model
 
 def get_pred_func(args):
     sess_init = SaverRestore(args.model_path)

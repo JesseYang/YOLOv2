@@ -12,9 +12,9 @@ import argparse
 from os.path import basename
 
 try:
-    from cfgs.config import cfg
-except Exception:
     from .cfgs.config import cfg
+except Exception:
+    from cfgs.config import cfg
 
 def parse_rec(filename):
     """ Parse a PASCAL VOC xml file """

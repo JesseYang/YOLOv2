@@ -1,4 +1,3 @@
-import numpy as np
 from easydict import EasyDict as edict
 
 cfg = edict()
@@ -7,9 +6,8 @@ cfg.img_w = 416
 cfg.img_h = 416
 cfg.grid_w = 32
 cfg.grid_h = 32
+
 cfg.multi_scale = [[320, 320], [352, 352], [384, 384], [416, 416], [448, 448], [480, 480], [512, 512], [544, 544], [576, 576], [608, 608]]
-cfg.learning_rate = [(0, 1e-4),(3, 2e-4),(6, 3e-4),(10, 6e-4),(15, 1e-3), (70, 1e-4), (110, 1e-5)]
-cfg.max_epoch = 160
 
 cfg.n_boxes = 5
 cfg.n_classes = 20
@@ -25,18 +23,38 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 30
 
-cfg.anchors = [[1.3221, 1.73145], [3.19275, 4.00944], [5.05587, 8.09892], [9.47112, 4.84053], [11.2364, 10.0071]]
+'''
+train
+Number of images: 66843
+k-means clustering pascal anchor points (original coordinates)
+Found at iteration 4 with best average IoU: 0.5163343295040421 
+[[ 0.4930636   0.83190876]
+ [ 1.34735609  2.61651251]
+ [ 2.83276422  6.79906007]
+ [ 5.08603695  3.11557501]
+ [ 8.82067671  9.3150539 ]]
 
-# ignore boxes which are too small (height or width smaller than size_th * 32)
-cfg.size_th = 0.1
+trainval
+k-means clustering pascal anchor points (original coordinates)
+Found at iteration 4 with best average IoU: 0.516533648800776 
+[[ 0.49754394  0.83553621]
+ [ 1.35252889  2.62245182]
+ [ 2.84472443  6.79466355]
+ [ 5.10358836  3.1065874 ]
+ [ 8.83700452  9.33602367]]
 
-# anchor sizes in [width, height], should be obtained by k-means clustering
-# from darknet source code
-# anchors = [[0.738768,0.874946],  [2.42204,2.65704],  [4.30971,7.04493],  [10.246,4.59428],  [12.6868,11.8741]]
-# for kitti
-# anchors = [[1.06593733, 1.03880763], [2.08908397, 4.90636738], [2.35326204, 1.43357071], [4.52926972, 2.49737608], [8.66448722, 4.9158313]]
-# for cmdt_109 train
-# anchors = [[2.09231069, 3.02696626], [2.89855228, 5.9450238], [4.52319573, 3.7978877], [5.94195853, 6.69752296], [9.05268409, 9.67410767]]
+voc07 voc12 coco
+ k-means clustering pascal anchor points (original coordinates)
+Found at iteration 56 with best average IoU: 0.5153392451551813 
+[[  0.52340679   0.89816029]
+ [  1.62204465   2.80834417]
+ [  3.12342422   7.01347654]
+ [  7.18121243   4.15297634]
+ [  9.25215845  10.1937983 ]]
+
+'''
+
+cfg.anchors = [[0.3988119, 0.609405], [0.78872602, 1.75459139], [2.00586473, 2.71944415], [3.30971659, 6.17074759], [8.93507659, 8.99826148]]
 
 cfg.classes_name =  ["aeroplane", "bicycle", "bird", "boat",
                      "bottle", "bus", "car", "cat",
@@ -49,8 +67,7 @@ cfg.classes_num = {'aeroplane': 0, 'bicycle': 1, 'bird': 2, 'boat': 3, 'bottle':
 	               'horse': 12, 'motorbike': 13, 'person': 14, 'pottedplant': 15, 'sheep': 16,
 	               'sofa': 17, 'train': 18, 'tvmonitor': 19}
 
-
-cfg.train_list = ["voc_2007_train.txt", "voc_2012_train.txt", "voc_2007_val.txt", "voc_2012_val.txt"]
+cfg.train_list = ["coco_voc_train.txt", "coco_voc_val.txt", "voc_2007_train.txt", "voc_2012_train.txt", "voc_2007_val.txt", "voc_2012_val.txt"]
 cfg.test_list = "voc_2007_test_without_diff.txt"
 
 cfg.det_th = 0.001
@@ -59,6 +76,9 @@ cfg.nms = True
 cfg.nms_th = 0.45
 
 cfg.mAP = True
+
+cfg.max_epoch = 160
+cfg.size_th = 0.1
 
 cfg.gt_from_xml = True
 cfg.gt_format = "voc"

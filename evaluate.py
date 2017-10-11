@@ -8,10 +8,13 @@ import shutil
 import cv2
 import pickle
 import argparse
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from os.path import basename
 
-from cfgs.config import cfg
+try:
+    from .cfgs.config import cfg
+except Exception:
+    from cfgs.config import cfg
 
 def parse_rec(filename):
     """ Parse a PASCAL VOC xml file """
@@ -97,7 +100,8 @@ def voc_eval(detpath,
     if not os.path.isfile(cachefile):
         # load annots
 
-        if cfg.gt_from_xml:
+        # if cfg.gt_from_xml:
+        if cfg.gt_format == "voc":
             with open(cfg.imagesetfile, 'r') as f:
                 lines = f.readlines()
             imagenames = [x.strip() for x in lines]
@@ -114,7 +118,7 @@ def voc_eval(detpath,
             with open(cfg.test_list) as f:
                 lines = f.readlines()
             splitlines = [x.strip().split(' ') for x in lines]
-            image_ids = [os.path.splitext(os.path.basename(x[0]))[0] for x in splitlines]
+            image_ids = [x[0] for x in splitlines]
             for idx, image_id in enumerate(image_ids):
                 if idx % 100 == 0:
                     print('Reading annotation for {:d}/{:d}'.format(
@@ -124,10 +128,10 @@ def voc_eval(detpath,
                 i = 1
                 while i < len(record):
                     # for each ground truth box
-                    xmin = int(record[i])
-                    ymin = int(record[i + 1])
-                    xmax = int(record[i + 2])
-                    ymax = int(record[i + 3])
+                    xmin = int(np.round(float(record[i])))
+                    ymin = int(np.round(float(record[i + 1])))
+                    xmax = int(np.round(float(record[i + 2])))
+                    ymax = int(np.round(float(record[i + 3])))
                     class_idx = int(record[i + 4])
                     i += 5
 

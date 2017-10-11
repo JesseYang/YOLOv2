@@ -44,3 +44,4 @@ cfg.nms_th = 0.45
 cfg.mAP = True
 
 cfg.gt_from_xml = False
+cfg.gt_format = "custom"

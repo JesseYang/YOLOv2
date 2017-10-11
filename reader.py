@@ -9,7 +9,11 @@ import copy
 import logging
 import cv2
 import json
-from cfgs.config import cfg
+
+try:
+    from .cfgs.config import cfg
+except Exception:
+    from cfgs.config import cfg
 
 from tensorpack import *
 
@@ -239,7 +243,7 @@ def generate_gt_result(test_path, gt_dir="result_gt", overwrite=True):
 
     for line in content:
         record = line.split(' ')
-        image_id = os.path.basename(record[0]).split('.')[0]
+        image_id = os.path.basename(record[0]).split('.')[0] if cfg.gt_format == "voc" else record[0]
         i = 1
         
         gt_cur_img = {}

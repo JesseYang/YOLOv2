@@ -20,9 +20,14 @@ from tensorpack.tfutils.summary import *
 from tensorpack.tfutils.sesscreate import SessionCreatorAdapter, NewSessionCreator
 from tensorflow.python import debug as tf_debug
 
-from cfgs.config import cfg
-from reader import Data, generate_gt_result
-from evaluate import do_python_eval
+try:
+    from .cfgs.config import cfg
+    from .reader import Data, generate_gt_result
+    from .evaluate import do_python_eval
+except Exception:
+    from cfgs.config import cfg
+    from reader import Data, generate_gt_result
+    from evaluate import do_python_eval
 
 class Model(ModelDesc):
 
@@ -261,7 +266,7 @@ class Model(ModelDesc):
 
         grid_ary_y = tf.cast(tf.range(self.grid_h), tf.float32)
         grid_tensor_y = tf.tile(grid_ary_y, [self.batch_size * cfg.n_boxes * self.grid_w])
-        grid_tensor_y = tf.reshape(grid_tensor_y, (-1, cfg.n_boxes, self.grid_h, self.grid_w))
+        grid_tensor_y = tf.reshape(grid_tensor_y, (-1, cfg.n_boxes, self.grid_w, self.grid_h))
         grid_tensor_y = tf.transpose(grid_tensor_y, (0, 1, 3, 2))
 
         anchor_ary = tf.cast(tf.constant(cfg.anchors), tf.float32)
@@ -278,7 +283,7 @@ class Model(ModelDesc):
 
         # b_pred is the predictor box, the unit is "cell"
         b_x = tf.reshape(x, (-1, cfg.n_boxes, self.grid_h, self.grid_w)) + grid_tensor_x
-        b_y = tf.reshape(x, (-1, cfg.n_boxes, self.grid_h, self.grid_w)) + grid_tensor_y
+        b_y = tf.reshape(y, (-1, cfg.n_boxes, self.grid_h, self.grid_w)) + grid_tensor_y
         b_w = tf.reshape(tf.exp(w), (-1, cfg.n_boxes, self.grid_h, self.grid_w)) * anchor_tensor_width
         b_h = tf.reshape(tf.exp(h), (-1, cfg.n_boxes, self.grid_h, self.grid_w)) * anchor_tensor_height
         b_pred = tf.stack([b_x, b_y, b_w, b_h], axis=4, name="pred_boxes")
@@ -335,7 +340,10 @@ class Model(ModelDesc):
         lr = get_scalar_var('learning_rate', 0, summary=True)
         return tf.train.MomentumOptimizer(lr, 0.9, use_nesterov=True)
 
-from predict import postprocess
+try:
+    from .predict import postprocess
+except Exception:
+    from predict import postprocess
 
 class CalMAP(Inferencer):
     def __init__(self, test_path):
@@ -359,7 +367,7 @@ class CalMAP(Inferencer):
 
         self.cur_image_idx = 0
 
-    def _get_output_tensors(self):
+    def _get_fetches(self):
         return self.names
 
     def _before_inference(self):
@@ -369,14 +377,14 @@ class CalMAP(Inferencer):
         self.loss = []
         self.cur_image_idx = 0
 
-    def _datapoint(self, output):
+    def _on_fetches(self, output):
         self.loss.append(output[7])
         output = output[0:7]
         for i in range(output[0].shape[0]):
             # for each ele in the batch
             image_path = self.image_path_list[self.cur_image_idx]
             self.cur_image_idx += 1
-            image_id = os.path.basename(image_path).split('.')[0]
+            image_id = os.path.basename(image_path).split('.')[0] if cfg.gt_format == "voc" else image_path
 
             cur_output = [ele[i] for ele in output]
             predictions = [np.expand_dims(ele, axis=0) for ele in cur_output[0:6]]
@@ -452,12 +460,7 @@ def get_config(args):
 
 
       ScheduledHyperParamSetter('learning_rate',
-                                ##det_th=0.3 loss_summary=0.2630
-                                #[(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 4e-4), (15, 5e-4), (30, 6e-4), (60, 7e-4),(90, 6e-5), (120,3e-5), (150,1e-5)]),
-                                
-                                ##det_th= loss_summary=
-                                [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 4e-4), (15, 5e-4), (30, 6e-4), (60, 7e-4),(90, 6e-5), (110,3e-5), (150,2e-5), (200,1e-5)]),
-
+                                [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
       ScheduledHyperParamSetter('unseen_scale',
                                 [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
       HumanHyperParamSetter('learning_rate'),
@@ -483,13 +486,17 @@ if __name__ == '__main__':
     parser.add_argument('--load', help='load model')
     parser.add_argument('--multi_scale', action='store_true')
     parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--log_dir', help="directory of logging", default=None)
     args = parser.parse_args()
 
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
     # assert args.gpu is not None, "Need to specify a list of gpu for training!"
-    logger.auto_set_dir()
+    if args.log_dir != None:
+        logger.set_logger_dir(os.path.join("train_log", args.log_dir))
+    else:
+        logger.auto_set_dir()
     config = get_config(args)
     if args.gpu != None:
         config.nr_tower = len(args.gpu.split(','))

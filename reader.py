@@ -273,4 +273,9 @@ def generate_gt_result(test_path, gt_dir="result_gt", overwrite=True):
                     f.write(' '.join(line) + '\n')
 
 if __name__ == '__main__':
-    pass
+    df = Data('doc_train.txt', shuffle=False, flip=False, affine_trans=False, use_multi_scale=True, period=8*10)
+    df.reset_state()
+    g = df.get_data()
+    for i in g:
+        pass
+        #print(i)

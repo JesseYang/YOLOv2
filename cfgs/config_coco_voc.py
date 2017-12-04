@@ -23,6 +23,8 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 30
 
+cfg.leaky_k = 0.125
+
 '''
 train
 Number of images: 66843

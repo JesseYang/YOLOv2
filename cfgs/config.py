@@ -1,1 +1,1 @@
-from .config_doc import cfg
+from .config_doc_512_384 import cfg

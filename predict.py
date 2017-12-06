@@ -252,6 +252,8 @@ def generate_pred_result(image_paths, predict_func, pred_dir):
 
 def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, enlarge_ratio=1.3):
     for image_idx, image_path in enumerate(image_paths):
+        if not os.path.exists(image_path):
+            continue
         if image_idx % 100 == 0 and image_idx > 0:
             print(str(image_idx))
         print(image_path)
@@ -289,7 +291,8 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, en
         else:
             # draw box on original image and save
             image_result = draw_result(ori_image, boxes)
-            save_path = os.path.join(output_dir, str(uuid.uuid4()) + ".jpg")
+            # save_path = os.path.join(output_dir, str(uuid.uuid4()) + ".jpg")
+            save_path = os.path.join(output_dir, image_path.split('/')[-1])
             # cv2.imwrite(save_path, image_result)
             cv2.imwrite(save_path, image_result)
 

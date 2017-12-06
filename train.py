@@ -118,6 +118,8 @@ class Model(ModelDesc):
         if self.data_format == "NCHW":
             image = tf.transpose(image, [0, 3, 1, 2])
 
+        image = tf.identity(image, name='network_input')
+
         # the network part
         with argscope(Conv2D, nl=tf.identity, use_bias=False), \
              argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format):

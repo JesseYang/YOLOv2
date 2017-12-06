@@ -297,7 +297,7 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, en
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', help='path of the model waiting for validation.')
-    parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NCHW')
+    parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NHWC')
     parser.add_argument('--input_path', help='path of the input image')
     parser.add_argument('--output_path', help='path of the output image', default='output.png')
     parser.add_argument('--test_path', help='path of the test file', default=None)

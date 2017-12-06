@@ -120,8 +120,7 @@ class Model(ModelDesc):
 
         # the network part
         with argscope(Conv2D, nl=tf.identity, use_bias=False), \
-             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format), \
-             argscope([BatchNorm], epsilon=0):
+             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format):
             # feature extracotr part
             high_res = (LinearWrap(image)
                       .Conv2D('conv1_1', 32, 3, stride=1)

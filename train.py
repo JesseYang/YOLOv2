@@ -221,7 +221,7 @@ class Model(ModelDesc):
             pred = (LinearWrap(feature)
                    .Conv2D('conv7_4', 1024, 3, stride=1)
                    .BatchNorm('bn7_4')
-                   .LeakyReLU('leaky7_4', 0.1)
+                   .LeakyReLU('leaky7_4', cfg.leaky_k)
                    .Conv2D('conv7_5', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())
 
 

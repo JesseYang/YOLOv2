@@ -118,10 +118,11 @@ class Model(ModelDesc):
         if self.data_format == "NCHW":
             image = tf.transpose(image, [0, 3, 1, 2])
 
+        image = tf.identity(image, name='network_input')
+
         # the network part
         with argscope(Conv2D, nl=tf.identity, use_bias=False), \
-             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format), \
-             argscope([BatchNorm], epsilon=0):
+             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format):
             # feature extracotr part
             high_res = (LinearWrap(image)
                       .Conv2D('conv1_1', 32, 3, stride=1)
@@ -220,7 +221,7 @@ class Model(ModelDesc):
             pred = (LinearWrap(feature)
                    .Conv2D('conv7_4', 1024, 3, stride=1)
                    .BatchNorm('bn7_4')
-                   .LeakyReLU('leaky7_4', 0.1)
+                   .LeakyReLU('leaky7_4', cfg.leaky_k)
                    .Conv2D('conv7_5', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())
 
 

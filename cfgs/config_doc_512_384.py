@@ -3,7 +3,7 @@ from easydict import EasyDict as edict
 
 cfg = edict()
 
-cfg.img_w = 384
+cfg.img_w = 288
 cfg.img_h = 512
 cfg.grid_w = 32
 cfg.grid_h = 32
@@ -40,11 +40,11 @@ cfg.classes_num = {'text_area': 0,
 cfg.train_list = ["doc_train.txt"]
 cfg.test_list = "doc_test.txt"
 
-cfg.det_th = 0.01
+cfg.det_th = 0.25
 cfg.iou_th = 0.5
 cfg.nms = True
 cfg.nms_th = 0.45
-
+cfg.leaky_k = 0.125
 cfg.mAP = True
 
 cfg.gt_from_xml = False

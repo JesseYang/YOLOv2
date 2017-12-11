@@ -9,7 +9,7 @@ import copy
 import logging
 import cv2
 import json
-
+import uuid
 try:
     from .cfgs.config import cfg
 except Exception:
@@ -194,7 +194,7 @@ class Data(RNGDataFlow):
             # b_h = p_h * e^{t_h}
             th[truth_idx, 0, int(center_h_cell), int(center_w_cell)] = np.log(box_h_cell / cfg.anchors[truth_idx][1])
             tprob[truth_idx, class_num, int(center_h_cell), int(center_w_cell)] = 1
-
+        # misc.imsave(str(uuid.uuid4())+".jpg", image)
         return [image, tx, ty, tw, th, tprob, spec_mask == 1.0, truth_box, np.asarray(s)]
 
     def get_data(self):
@@ -275,7 +275,9 @@ def generate_gt_result(test_path, gt_dir="result_gt", overwrite=True):
 if __name__ == '__main__':
     df = Data('doc_train.txt', shuffle=False, flip=False, affine_trans=False, use_multi_scale=True, period=8*10)
     df.reset_state()
-    g = df.get_data()
-    for i in g:
-        pass
+    count = 0
+    while count < 5:
+        count += 1
+        g = df.get_data()
+        pb = next(g)
         #print(i)

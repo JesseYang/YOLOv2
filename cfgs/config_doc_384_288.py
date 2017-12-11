@@ -43,7 +43,7 @@ cfg.det_th = 0.01
 cfg.iou_th = 0.5
 cfg.nms = True
 cfg.nms_th = 0.45
-
+cfg.leaky_k = 0.125
 cfg.mAP = True
 
 cfg.gt_from_xml = False

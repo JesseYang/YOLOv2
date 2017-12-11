@@ -483,7 +483,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default='1')
     parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NHWC')
-    parser.add_argument('--batch_size', help='batch size', default='32')
+    parser.add_argument('--batch_size', help='batch size', default=32)
     parser.add_argument('--load', help='load model')
     parser.add_argument('--multi_scale', action='store_true')
     parser.add_argument('--debug', action='store_true')
@@ -492,6 +492,7 @@ if __name__ == '__main__':
 
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+        
 
     # assert args.gpu is not None, "Need to specify a list of gpu for training!"
     if args.log_dir != None:

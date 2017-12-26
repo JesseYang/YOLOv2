@@ -31,7 +31,7 @@ except Exception:
 
 class Model(ModelDesc):
 
-    def __init__(self, data_format="NCHW"):
+    def __init__(self, data_format="NHWC"):
         super(Model, self).__init__()
         self.data_format = data_format
 
@@ -462,7 +462,8 @@ def get_config(args):
 
 
       ScheduledHyperParamSetter('learning_rate',
-                                [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
+                                [(0, 1e-4)]),
+                                # [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
       ScheduledHyperParamSetter('unseen_scale',
                                 [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
       HumanHyperParamSetter('learning_rate'),
@@ -475,7 +476,7 @@ def get_config(args):
     return TrainConfig(
         dataflow=ds_train,
         callbacks=callbacks,
-        model=Model(args.data_format),
+        model=Model(),
         max_epoch=cfg.max_epoch,
     )
 
@@ -483,27 +484,53 @@ def get_config(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default='1')
-    parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NHWC')
+    parser.add_argument('--batch_size', help='batch size', default='32')
     parser.add_argument('--batch_size', help='batch size', default=32)
     parser.add_argument('--load', help='load model')
     parser.add_argument('--multi_scale', action='store_true')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--log_dir', help="directory of logging", default=None)
+    parser.add_argument('--flops', action="store_true", help="print flops and exit")
     args = parser.parse_args()
 
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
         
 
-    # assert args.gpu is not None, "Need to specify a list of gpu for training!"
-    if args.log_dir != None:
-        logger.set_logger_dir(os.path.join("train_log", args.log_dir))
-    else:
-        logger.auto_set_dir()
-    config = get_config(args)
-    if args.gpu != None:
-        config.nr_tower = len(args.gpu.split(','))
+    if args.flops:
+        model = Model()
+        cell_h = int(cfg.img_h / cfg.grid_h)
+        cell_w = int(cfg.img_w / cfg.grid_w)
+        input_desc = [
+            InputDesc(tf.uint8, [1, 416, 416, 3], 'input'),
+            InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'tx'),
+            InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'ty'),
+            InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'tw'),
+            InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'th'),
+            InputDesc(tf.float32, [1, cfg.n_boxes, cfg.n_classes, cell_h, cell_w], 'tprob'),
+            InputDesc(tf.bool, [1, cfg.n_boxes, cell_h, cell_w], 'spec_mask'),
+            InputDesc(tf.float32, [1, cfg.max_box_num, 4], 'truth_box'),
+            InputDesc(tf.float32, [1, 3], 'ori_shape'),
+        ]
+        input = PlaceholderInput()
+        input.setup(input_desc)
+        with TowerContext('', is_training=True):
+            model.build_graph(*input.get_input_tensors())
 
-    if args.load:
-        config.session_init = SaverRestore(args.load)
-    SyncMultiGPUTrainer(config).train()
+        tf.profiler.profile(
+            tf.get_default_graph(),
+            cmd='op',
+            options=tf.profiler.ProfileOptionBuilder.float_operation())
+    else:
+        # assert args.gpu is not None, "Need to specify a list of gpu for training!"
+        if args.log_dir != None:
+            logger.set_logger_dir(os.path.join("train_log", args.log_dir))
+        else:
+            logger.auto_set_dir()
+        config = get_config(args)
+        if args.gpu != None:
+            config.nr_tower = len(args.gpu.split(','))
+
+        if args.load:
+            config.session_init = SaverRestore(args.load)
+        SyncMultiGPUTrainer(config).train()

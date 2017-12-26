@@ -38,7 +38,7 @@ cfg.classes_num = {'text_area': 0,
 
 cfg.train_list = ["doc_train.txt"]
 cfg.test_list = "doc_test.txt"
-
+cfg.leaky_k = 0.125
 cfg.det_th = 0.01
 cfg.iou_th = 0.5
 cfg.nms = True

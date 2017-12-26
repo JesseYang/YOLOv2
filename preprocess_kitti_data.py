@@ -65,14 +65,14 @@ for idx, label in enumerate(labels):
 	x1, y1, x2, y2 = bbox[0]
 
 	neg_num = 0
-	while neg_num < 100:
+	while neg_num < 40:
 		neg_num += 1
 
 		x_c = np.random.randint(0, int(w*0.8))
 		y_c = np.random.randint(0, int(h*0.8))
 		size_w = np.random.randint(x2-x1-30, x2-x1+30)
 		size_h = np.random.randint(y2-y1-30, y2-y1+30)
-		if size_h <= size_w*0.7:
+		if size_h <= size_w*0.7 or size_w <= 0 or size_h <= 0 or (x_c + size_w) >= w or (y_c + size_h) >= h:
 			continue
 		
 		
@@ -108,7 +108,7 @@ for idx, label in enumerate(labels):
 		if max(w_, h_) < 10 or x1 <0 or y1 <0:
 			continue
 	##generate positive.txt
-		for i in range(10):
+		for i in range(17):
 			# print(i)
 			size_w = np.random.randint(w_ - 10, w_ + 10)
 			size_h = np.random.randint(h_ - 10, h_ + 10) 
@@ -121,7 +121,7 @@ for idx, label in enumerate(labels):
 			nx2 = min(nx1 + size_w, w)
 			ny2 = min(ny1 + size_h, h)
 
-			if nx2 > w or ny2 > h:
+			if nx2 >= w or ny2 >= h or nx2 <= nx1 or ny2 <= ny1:
 				continue
 			crop_box = np.array([nx1, ny1, nx2, ny2])
 

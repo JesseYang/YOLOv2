@@ -484,7 +484,6 @@ def get_config(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default='1')
-    parser.add_argument('--batch_size', help='batch size', default='32')
     parser.add_argument('--batch_size', help='batch size', default=32)
     parser.add_argument('--load', help='load model')
     parser.add_argument('--multi_scale', action='store_true')

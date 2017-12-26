@@ -40,7 +40,29 @@ def generate_extract_txt():
         result.write(os.path.join(root_data, img) + "\n")
 
 
+def val_kitti():
+    file = 'test_kitti_train.txt'
+    with open(file) as f:
+        labels = f.readlines()
+    print("num ", len(labels))
 
+    for label in labels:
+        img_path = label.split(' ')[0]
+        print(img_path)
+        # bbox = [int(float(ele)) for ele in label.strip().split(' ')[1:]]
+        bbox = [ele for ele in label.strip().split(' ')[1:]]
+        print(bbox)
+        bbox = np.array(bbox, dtype = np.float32).reshape(-1,4)
+        img = cv2.imread(img_path)
+        img_color = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        for box in bbox:
+            cv2.rectangle(img_color, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (0, 0, 255), 1)
+        # h, w, c = img.shape
+        # 
+        # neg_num = 0 
+
+        cv2.imwrite(os.path.join('kitti_dir', str(uuid.uuid4()) + ".jpg"), img_color)
 if __name__ == '__main__':
     # copy_file()
-    generate_extract_txt()
+    # generate_extract_txt()
+    val_kitti()

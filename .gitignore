@@ -1,4 +1,9 @@
 *.txt
+kit*
+extract*
+data_doc
+ann*
+doc_*
 data*
 __pycache__
 .ipynb_checkpoints

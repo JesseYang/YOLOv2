@@ -201,7 +201,7 @@ def softmax(x):
     softmax_x = exp_x / np.expand_dims(np.sum(exp_x, 2), 2)
     return softmax_x 
 
-def predict_image(feat, image_path, output_path, det_th, pred_conf, pred_prob):
+def predict_image(feat, image_path, output_path, det_th):
     ori_image = cv2.imread(image_path)
     cvt_clr_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
 
@@ -230,6 +230,6 @@ if __name__ == '__main__':
     parser.add_argument('--det_th', help='detection threshold', default=0.25)
     args = parser.parse_args()
 
-    features = np.load(args.feature_path)[()]
+    features = np.load(args.feature_path, encoding='latin1')[()]
 
-    predict_image(features['conv7_5'], args.image_path, args.output_path, args.det_th, features['pred_conf'], features['pred_prob'])
+    predict_image(features['conv7_5'], args.image_path, args.output_path, args.det_th)

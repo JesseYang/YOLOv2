@@ -28,7 +28,7 @@ cfg.anchors = [[2.35413089, 1.80181272], [5.66890445, 9.15139471], [5.85887638, 
 
 # ignore boxes which are too small (height or width smaller than size_th * 32)
 cfg.size_th = 0.1
-
+cfg.leaky_k = 0.125
 cfg.classes_name =  ['text_area', 'figure', 'table']
 cfg.batch_size = 8
 cfg.classes_num = {'text_area': 0,

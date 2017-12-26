@@ -1,1 +1,1 @@
-from .config_doc_512_384 import cfg
+from .config_coco_voc import cfg

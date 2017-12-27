@@ -462,8 +462,8 @@ def get_config(args):
 
 
       ScheduledHyperParamSetter('learning_rate',
-                                [(0, 1e-4)]),
-                                # [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
+                                # [(0, 1e-4)]),
+                                [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
       ScheduledHyperParamSetter('unseen_scale',
                                 [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
       HumanHyperParamSetter('learning_rate'),

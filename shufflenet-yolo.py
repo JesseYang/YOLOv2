@@ -21,19 +21,6 @@ from tensorpack.tfutils.sesscreate import SessionCreatorAdapter, NewSessionCreat
 from tensorpack.tfutils.scope_utils import under_name_scope
 from tensorflow.python import debug as tf_debug
 
-
-# from tensorpack import logger, QueueInput, InputDesc, PlaceholderInput, TowerContext
-# from tensorpack.models import *
-# from tensorpack.callbacks import *
-# from tensorpack.train import *
-# from tensorpack.dataflow import imgaug
-# from tensorpack.tfutils import argscope, get_model_loader
-# from tensorpack.utils.gpu import get_nr_gpu
-
-# from imagenet_utils import (
-#     get_imagenet_dataflow,
-#     ImageNetModel, GoogleNetResize, eval_on_ILSVRC12)
-
 try:
     from .cfgs.config import cfg
     from .reader import Data, generate_gt_result
@@ -456,8 +443,7 @@ def get_config(args):
 
 
       ScheduledHyperParamSetter('learning_rate',
-                                [(0, 1e-4)]),
-                                # [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
+                                [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
       ScheduledHyperParamSetter('unseen_scale',
                                 [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
       HumanHyperParamSetter('learning_rate'),
@@ -525,5 +511,6 @@ if __name__ == '__main__':
             config.nr_tower = len(args.gpu.split(','))
 
         if args.load:
-            config.session_init = SaverRestore(args.load)
+            config.session_init = get_model_loader(args.load)
+
         SyncMultiGPUTrainer(config).train()

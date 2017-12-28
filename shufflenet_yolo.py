@@ -202,7 +202,7 @@ class Model(ModelDesc):
 
             # reduce high_res channel num by 1x1 conv
             high_res = (LinearWrap(high_res)
-                      .Conv2D('conv_low', 64, 1, stride=1)
+                      .Conv2D('conv_low', 32, 1, stride=1)
                       .BatchNorm('bn_low')
                       .LeakyReLU('leaky_low', cfg.leaky_k)())
 
@@ -213,7 +213,7 @@ class Model(ModelDesc):
             feature = tf.concat([high_res, low_res], axis=1, name="stack_feature")
 
             pred = (LinearWrap(feature)
-                   .Conv2D('conv_last', 630, 3, stride=1)
+                   .Conv2D('conv_last', 512, 3, stride=1)
                    .BatchNorm('bn_last')
                    .LeakyReLU('leaky_last', cfg.leaky_k)
                    .Conv2D('conv_final', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())

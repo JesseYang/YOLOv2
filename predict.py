@@ -153,17 +153,18 @@ def postprocess(predictions, image_path=None, image_shape=None, det_th=None):
 
 try:
     from .train import Model as DkModel
-    from .shufflenet-yolo import Model as ShfModel
+    # from .shufflenet_yolo import Model as ShfModel
 except Exception:
     from train import Model as DkModel
-    from shufflenet-yolo import Model as ShfModel
+    # from shufflenet_yolo import Model as ShfModel
 
 def get_pred_func(args):
     sess_init = SaverRestore(args.model_path)
-    if args.model == 'darknet':
-        model = DkModel()
-    else:
-        model = ShfModel()
+    model = DkModel()
+    # if args.model == 'darknet':
+    #     model = DkModel()
+    # else:
+    #     model = ShfModel()
     predict_config = PredictConfig(session_init=sess_init,
                                    model=model,
                                    input_names=["input", "spec_mask"],

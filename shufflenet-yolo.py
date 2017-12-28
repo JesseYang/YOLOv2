@@ -192,15 +192,28 @@ class Model(ModelDesc):
                     with tf.variable_scope('block{}'.format(i)):
                         l = shufflenet_unit(l, channels[1], group, 2 if i == 0 else 1)
 
+            high_res = l
+
             with tf.variable_scope('group3'):
                 for i in range(4):
                     with tf.variable_scope('block{}'.format(i)):
                         l = shufflenet_unit(l, channels[2], group, 2 if i == 0 else 1)
-            # l = GlobalAvgPooling('gap', l)
+            low_res = l
 
+            # reduce high_res channel num by 1x1 conv
+            high_res = (LinearWrap(high_res)
+                      .Conv2D('conv_low', 64, 1, stride=1)
+                      .BatchNorm('bn_low')
+                      .LeakyReLU('leaky_low', cfg.leaky_k)())
 
-            pred = (LinearWrap(l)
-                   .Conv2D('conv_last', 832, 3, stride=1)
+            high_res = tf.transpose(high_res, [0, 2, 3, 1])
+            high_res = tf.space_to_depth(high_res, 2, name="high_res_reshape")
+            high_res = tf.transpose(high_res, [0, 3, 1, 2])
+
+            feature = tf.concat([high_res, low_res], axis=1, name="stack_feature")
+
+            pred = (LinearWrap(feature)
+                   .Conv2D('conv_last', 630, 3, stride=1)
                    .BatchNorm('bn_last')
                    .LeakyReLU('leaky_last', cfg.leaky_k)
                    .Conv2D('conv_final', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())

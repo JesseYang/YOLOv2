@@ -152,13 +152,18 @@ def postprocess(predictions, image_path=None, image_shape=None, det_th=None):
     return nms_boxes
 
 try:
-    from .train import Model
+    from .train import Model as DkModel
+    from .shufflenet-yolo import Model as ShfModel
 except Exception:
-    from train import Model
+    from train import Model as DkModel
+    from shufflenet-yolo import Model as ShfModel
 
 def get_pred_func(args):
     sess_init = SaverRestore(args.model_path)
-    model = Model(args.data_format)
+    if args.model == 'darknet':
+        model = DkModel()
+    else:
+        model = ShfModel()
     predict_config = PredictConfig(session_init=sess_init,
                                    model=model,
                                    input_names=["input", "spec_mask"],
@@ -300,6 +305,7 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, en
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', help='path of the model waiting for validation.')
+    parser.add_argument('--model', help='the model used', default='darknet')
     parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NHWC')
     parser.add_argument('--input_path', help='path of the input image')
     parser.add_argument('--output_path', help='path of the output image', default='output.png')

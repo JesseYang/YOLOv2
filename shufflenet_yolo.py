@@ -19,6 +19,7 @@ from tensorpack.tfutils.symbolic_functions import *
 from tensorpack.tfutils.summary import *
 from tensorpack.tfutils.sesscreate import SessionCreatorAdapter, NewSessionCreator
 from tensorpack.tfutils.scope_utils import under_name_scope
+from tensorpack.utils.gpu import get_nr_gpu
 from tensorflow.python import debug as tf_debug
 
 try:
@@ -49,11 +50,17 @@ def DepthConv(x, out_channel, kernel_shape, padding='SAME', stride=1,
 
 @under_name_scope()
 def channel_shuffle(l, group):
-    in_shape = l.get_shape().as_list()
-    in_channel = in_shape[1]
-    l = tf.reshape(l, [-1, group, in_channel // group] + in_shape[-2:])
+    in_shape = tf.shape(l)
+    #in_shape = l.get_shape().as_list()
+    in_channel = l.get_shape().as_list()[1]
+    #in_channel = in_shape[1]
+    in_h = in_shape[2]
+    in_w = in_shape[3]
+    l = tf.reshape(l, (-1, group, in_channel // group, in_h, in_w))
+    # l = tf.reshape(l, [-1, group, in_channel // group] + in_shape[-2:])
     l = tf.transpose(l, [0, 2, 1, 3, 4])
-    l = tf.reshape(l, [-1, in_channel] + in_shape[-2:])
+    l = tf.reshape(l, (-1, in_channel, in_h, in_w))
+    # l = tf.reshape(l, [-1, in_channel] + in_shape[-2:])
     return l
 
 def BN(x, name):
@@ -61,23 +68,37 @@ def BN(x, name):
 
 class Model(ModelDesc):
 
-    def __init__(self, data_format="NCHW"):
+    def __init__(self, data_format="NCHW", multi_scale=False):
         super(Model, self).__init__()
         self.data_format = data_format
+        self.multi_scale = multi_scale
 
     def _get_inputs(self):
-        cell_h = int(cfg.img_h / cfg.grid_h)
-        cell_w = int(cfg.img_w / cfg.grid_w)
-        return [InputDesc(tf.uint8, [None, cfg.img_h, cfg.img_w, 3], 'input'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'tx'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'ty'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'tw'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'th'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, cfg.n_classes, cell_h, cell_w], 'tprob'),
-                InputDesc(tf.bool, [None, cfg.n_boxes, cell_h, cell_w], 'spec_mask'),
-                InputDesc(tf.float32, [None, cfg.max_box_num, 4], 'truth_box'),
-                InputDesc(tf.float32, [None, 3], 'ori_shape'),
-                ]
+        if self.multi_scale == False:
+            cell_h = int(cfg.img_h / cfg.grid_h)
+            cell_w = int(cfg.img_w / cfg.grid_w)
+            return [InputDesc(tf.uint8, [None, cfg.img_h, cfg.img_w, 3], 'input'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'tx'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'ty'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'tw'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'th'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, cfg.n_classes, cell_h, cell_w], 'tprob'),
+                    InputDesc(tf.bool, [None, cfg.n_boxes, cell_h, cell_w], 'spec_mask'),
+                    InputDesc(tf.float32, [None, cfg.max_box_num, 4], 'truth_box'),
+                    InputDesc(tf.float32, [None, 3], 'ori_shape'),
+                    ]
+        else:
+            return [InputDesc(tf.uint8, [None, None, None, 3], 'input'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'tx'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'ty'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'tw'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'th'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, cfg.n_classes, None, None], 'tprob'),
+                    InputDesc(tf.bool, [None, cfg.n_boxes, None, None], 'spec_mask'),
+                    InputDesc(tf.float32, [None, cfg.max_box_num, 4], 'truth_box'),
+                    InputDesc(tf.float32, [None, 3], 'ori_shape'),
+                    ]
+
 
     def cal_multi_multi_iou(self, boxes1, boxes2):
         """
@@ -141,6 +162,8 @@ class Model(ModelDesc):
         conf_scale = tf.ones((self.batch_size, cfg.n_boxes, 1, self.grid_h, self.grid_w)) * cfg.noobject_scale
         class_scale = spec_indicator * cfg.class_scale
         class_scale = tf.tile(class_scale, [1, 1, cfg.n_classes, 1, 1], name="class_scale")
+
+        tf.summary.image('input-image', image, max_outputs=3)
 
         image = tf.cast(image, tf.float32) * (1.0 / 255)
 
@@ -469,7 +492,7 @@ def get_config(args):
     return TrainConfig(
         dataflow=ds_train,
         callbacks=callbacks,
-        model=Model(),
+        model=Model(multi_scale=args.multi_scale),
         max_epoch=cfg.max_epoch,
     )
 
@@ -526,4 +549,6 @@ if __name__ == '__main__':
         if args.load:
             config.session_init = get_model_loader(args.load)
 
-        SyncMultiGPUTrainer(config).train()
+        trainer = SyncMultiGPUTrainerParameterServer(max(get_nr_gpu(), 1))
+        launch_train_with_config(config, trainer)
+        # SyncMultiGPUTrainer(config).train()

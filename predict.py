@@ -147,7 +147,6 @@ def postprocess(predictions, image_path=None, image_shape=None, det_th=None):
             nms_boxes[klass] = k_boxes
     else:
         nms_boxes = boxes
-
     
     return nms_boxes
 
@@ -318,6 +317,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='directory to save image result', default='output')
     args = parser.parse_args()
 
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
     predict_func = get_pred_func(args)
 

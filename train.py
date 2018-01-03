@@ -110,6 +110,8 @@ class Model(ModelDesc):
         class_scale = spec_indicator * cfg.class_scale
         class_scale = tf.tile(class_scale, [1, 1, cfg.n_classes, 1, 1], name="class_scale")
 
+        tf.summary.image('input-image', image, max_outputs=3)
+
         image = tf.cast(image, tf.float32) * (1.0 / 255)
 
         image_mean = tf.constant([0.485, 0.456, 0.406], dtype=tf.float32)

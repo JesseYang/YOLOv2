@@ -235,6 +235,21 @@ class Model(ModelDesc):
 
             feature = tf.concat([high_res, low_res], axis=1, name="stack_feature")
 
+
+            '''
+            # shufflenet-unit for final convs
+            with tf.variable_scope('output_group'):
+                feature = shufflenet_unit(feature, channels[2] + 32 * 4, group, 1)
+                in_shape = feature.get_shape().as_list()
+                in_channel = in_shape[1]
+                l = Conv2D('conv_last', feature, in_channel // 4, 1, split=8, nl=BNReLU)
+                l = channel_shuffle(l, 8)
+                l = DepthConv('dconv_last', l, in_channel // 4, 3, nl=BN, stride=1)
+                pred = Conv2D('conv_final', l, cfg.n_boxes * (5 + cfg.n_classes), 1, use_bias=True)
+            '''
+
+
+            # original final convs
             pred = (LinearWrap(feature)
                    .Conv2D('conv_last', 512, 3, stride=1)
                    .BatchNorm('bn_last')
@@ -517,7 +532,7 @@ if __name__ == '__main__':
         cell_h = int(cfg.img_h / cfg.grid_h)
         cell_w = int(cfg.img_w / cfg.grid_w)
         input_desc = [
-            InputDesc(tf.uint8, [1, 416, 416, 3], 'input'),
+            InputDesc(tf.uint8, [1, cfg.img_h, cfg.img_w, 3], 'input'),
             InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'tx'),
             InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'ty'),
             InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'tw'),

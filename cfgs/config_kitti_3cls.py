@@ -24,6 +24,8 @@ cfg.class_scale = 1
 cfg.noobject_scale = 1
 cfg.max_box_num = 20
 
+cfg.leaky_k = 0.1
+
 cfg.anchors = [[0.54424761, 0.47423913], [0.94360778, 0.91102493], [1.69511006, 1.18436854], [2.9239961, 1.52414664], [3.81888866, 2.7836075]]
 
 # ignore boxes which are too small (height or width smaller than size_th * 32)

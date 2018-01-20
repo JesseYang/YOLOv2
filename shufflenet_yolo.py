@@ -50,17 +50,20 @@ def DepthConv(x, out_channel, kernel_shape, padding='SAME', stride=1,
 
 @under_name_scope()
 def channel_shuffle(l, group):
-    in_shape = tf.shape(l)
-    #in_shape = l.get_shape().as_list()
-    in_channel = l.get_shape().as_list()[1]
-    #in_channel = in_shape[1]
-    in_h = in_shape[2]
-    in_w = in_shape[3]
-    l = tf.reshape(l, (-1, group, in_channel // group, in_h, in_w))
-    # l = tf.reshape(l, [-1, group, in_channel // group] + in_shape[-2:])
-    l = tf.transpose(l, [0, 2, 1, 3, 4])
-    l = tf.reshape(l, (-1, in_channel, in_h, in_w))
-    # l = tf.reshape(l, [-1, in_channel] + in_shape[-2:])
+    if args.multi_scale:
+        in_shape = tf.shape(l)
+        in_channel = l.get_shape().as_list()[1]
+        in_h = in_shape[2]
+        in_w = in_shape[3]
+        l = tf.reshape(l, (-1, group, in_channel // group, in_h, in_w))
+        l = tf.transpose(l, [0, 2, 1, 3, 4])
+        l = tf.reshape(l, (-1, in_channel, in_h, in_w))
+    else:
+        in_shape = l.get_shape().as_list()
+        in_channel = in_shape[1]
+        l = tf.reshape(l, [-1, group, in_channel // group] + in_shape[-2:])
+        l = tf.transpose(l, [0, 2, 1, 3, 4])
+        l = tf.reshape(l, [-1, in_channel] + in_shape[-2:])
     return l
 
 def BN(x, name):
@@ -200,7 +203,8 @@ class Model(ModelDesc):
         with argscope([Conv2D, MaxPooling, AvgPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format), \
                 argscope(Conv2D, use_bias=False):
             group = 8
-            channels = [224, 416, 832]
+            channels = [384, 768, 1536]
+            # channels = [224, 416, 832]
 
             l = Conv2D('conv1', image, 16, 3, stride=2, nl=BNReLU)
             l = MaxPooling('pool1', l, 3, 2, padding='SAME')
@@ -211,7 +215,7 @@ class Model(ModelDesc):
                         l = shufflenet_unit(l, channels[0], group, 2 if i == 0 else 1)
 
             with tf.variable_scope('group2'):
-                for i in range(6):
+                for i in range(8):
                     with tf.variable_scope('block{}'.format(i)):
                         l = shufflenet_unit(l, channels[1], group, 2 if i == 0 else 1)
 
@@ -236,25 +240,21 @@ class Model(ModelDesc):
             feature = tf.concat([high_res, low_res], axis=1, name="stack_feature")
 
 
-            '''
             # shufflenet-unit for final convs
             with tf.variable_scope('output_group'):
+                group = 8
                 feature = shufflenet_unit(feature, channels[2] + 32 * 4, group, 1)
-                in_shape = feature.get_shape().as_list()
-                in_channel = in_shape[1]
-                l = Conv2D('conv_last', feature, in_channel // 4, 1, split=8, nl=BNReLU)
-                l = channel_shuffle(l, 8)
-                l = DepthConv('dconv_last', l, in_channel // 4, 3, nl=BN, stride=1)
-                pred = Conv2D('conv_final', l, cfg.n_boxes * (5 + cfg.n_classes), 1, use_bias=True)
+                pred = Conv2D('conv_final', feature, cfg.n_boxes * (5 + cfg.n_classes), 1, use_bias=True)
+
+
             '''
-
-
             # original final convs
             pred = (LinearWrap(feature)
                    .Conv2D('conv_last', 512, 3, stride=1)
                    .BatchNorm('bn_last')
                    .LeakyReLU('leaky_last', cfg.leaky_k)
                    .Conv2D('conv_final', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())
+            '''
 
 
         # the loss part, confirm that pred is NCHW format
@@ -494,14 +494,16 @@ def get_config(args):
 
 
       ScheduledHyperParamSetter('learning_rate',
-                                [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
+                                # [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 4e-4), (30, 5e-4), (120, 1e-4), (150, 1e-5)]),
+                                [(0, 1e-4)]),
       ScheduledHyperParamSetter('unseen_scale',
-                                [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
+                                # [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
+                                [(0, 0)]),
       HumanHyperParamSetter('learning_rate'),
     ]
     if cfg.mAP == True:
-        callbacks.append(PeriodicTrigger(InferenceRunner(ds_test, [CalMAP(cfg.test_list)]),
-                                         every_k_epochs=3))
+        callbacks.append(EnableCallbackIf(PeriodicTrigger(InferenceRunner(ds_test, [CalMAP(cfg.test_list)]), every_k_epochs=3),
+                                          lambda x : x.epoch_num >= 10))
     if args.debug:
       callbacks.append(HookToCallback(tf_debug.LocalCLIDebugHook()))
     return TrainConfig(

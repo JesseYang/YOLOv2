@@ -30,3 +30,4 @@ head_hand_sku_output
 coco
 voc
 *.npy
+*.pb

@@ -29,6 +29,11 @@ except Exception:
     from reader import Data, generate_gt_result
     from evaluate import do_python_eval
 
+@layer_register(use_scope=None)
+def ReLU(x, name=None):
+    x = tf.nn.relu(x, name=name)
+    return x
+
 class Model(ModelDesc):
 
     def __init__(self, data_format="NHWC"):
@@ -128,85 +133,85 @@ class Model(ModelDesc):
             high_res = (LinearWrap(image)
                       .Conv2D('conv1_1', 32, 3, stride=1)
                       .BatchNorm('bn1_1')
-                      .LeakyReLU('leaky1_1', cfg.leaky_k)
+                      .ReLU('leaky1_1')
                       .MaxPooling('pool1', 2)
                       # 208x208
                       .Conv2D('conv2_1', 64, 3, stride=1)
                       .BatchNorm('bn2_1')
-                      .LeakyReLU('leaky2_1', cfg.leaky_k)
+                      .ReLU('leaky2_1')
                       .MaxPooling('pool2', 2)
                       # 104x104
                       .Conv2D('conv3_1', 128, 3, stride=1)
                       .BatchNorm('bn3_1')
-                      .LeakyReLU('leaky3_1', cfg.leaky_k)
+                      .ReLU('leaky3_1')
                       .Conv2D('conv3_2', 64, 1, stride=1)
                       .BatchNorm('bn3_2')
-                      .LeakyReLU('leaky3_2', cfg.leaky_k)
+                      .ReLU('leaky3_2')
                       .Conv2D('conv3_3', 128, 3, stride=1)
                       .BatchNorm('bn3_3')
-                      .LeakyReLU('leaky3_3', cfg.leaky_k)
+                      .ReLU('leaky3_3')
                       .MaxPooling('pool3', 2)
                       # 52x52
                       .Conv2D('conv4_1', 256, 3, stride=1)
                       .BatchNorm('bn4_1')
-                      .LeakyReLU('leaky4_1', cfg.leaky_k)
+                      .ReLU('leaky4_1')
                       .Conv2D('conv4_2', 128, 1, stride=1)
                       .BatchNorm('bn4_2')
-                      .LeakyReLU('leaky4_2', cfg.leaky_k)
+                      .ReLU('leaky4_2')
                       .Conv2D('conv4_3', 256, 3, stride=1)
                       .BatchNorm('bn4_3')
-                      .LeakyReLU('leaky4_3', cfg.leaky_k)
+                      .ReLU('leaky4_3')
                       .MaxPooling('pool4', 2)
                       # 26x26
                       .Conv2D('conv5_1', 512, 3, stride=1)
                       .BatchNorm('bn5_1')
-                      .LeakyReLU('leaky5_1', cfg.leaky_k)
+                      .ReLU('leaky5_1')
                       .Conv2D('conv5_2', 256, 1, stride=1)
                       .BatchNorm('bn5_2')
-                      .LeakyReLU('leaky5_2', cfg.leaky_k)
+                      .ReLU('leaky5_2')
                       .Conv2D('conv5_3', 512, 3, stride=1)
                       .BatchNorm('bn5_3')
-                      .LeakyReLU('leaky5_3', cfg.leaky_k)
+                      .ReLU('leaky5_3')
                       .Conv2D('conv5_4', 256, 1, stride=1)
                       .BatchNorm('bn5_4')
-                      .LeakyReLU('leaky5_4', cfg.leaky_k)
+                      .ReLU('leaky5_4')
                       .Conv2D('conv5_5', 512, 3, stride=1)
                       .BatchNorm('bn5_5')
-                      .LeakyReLU('leaky5_5', cfg.leaky_k)())
+                      .ReLU('leaky5_5')())
 
             feature = (LinearWrap(high_res)
                       .MaxPooling('pool5', 2)
                       # 13x13
                       .Conv2D('conv6_1', 1024, 3, stride=1)
                       .BatchNorm('bn6_1')
-                      .LeakyReLU('leaky6_1', cfg.leaky_k)
+                      .ReLU('leaky6_1')
                       .Conv2D('conv6_2', 512, 1, stride=1)
                       .BatchNorm('bn6_2')
-                      .LeakyReLU('leaky6_2', cfg.leaky_k)
+                      .ReLU('leaky6_2')
                       .Conv2D('conv6_3', 1024, 3, stride=1)
                       .BatchNorm('bn6_3')
-                      .LeakyReLU('leaky6_3', cfg.leaky_k)
+                      .ReLU('leaky6_3')
                       .Conv2D('conv6_4', 512, 1, stride=1)
                       .BatchNorm('bn6_4')
-                      .LeakyReLU('leaky6_4', cfg.leaky_k)
+                      .ReLU('leaky6_4')
                       .Conv2D('conv6_5', 1024, 3, stride=1)
                       .BatchNorm('bn6_5')
-                      .LeakyReLU('leaky6_5', cfg.leaky_k)())
+                      .ReLU('leaky6_5')())
 
             # new layers part
             low_res = (LinearWrap(feature)
                       .Conv2D('conv7_1', 1024, 3, stride=1)
                       .BatchNorm('bn7_1')
-                      .LeakyReLU('leaky7_1', cfg.leaky_k)
+                      .ReLU('leaky7_1')
                       .Conv2D('conv7_2', 1024, 3, stride=1)
                       .BatchNorm('bn7_2')
-                      .LeakyReLU('leaky7_2', cfg.leaky_k)())
+                      .ReLU('leaky7_2')())
 
             # reduce high_res channel num by 1x1 conv
             high_res = (LinearWrap(high_res)
                       .Conv2D('conv7_3', 64, 1, stride=1)
                       .BatchNorm('bn7_3')
-                      .LeakyReLU('leaky7_3', cfg.leaky_k)())
+                      .ReLU('leaky7_3')())
 
             # concat high_res and low_res
             # tf.space_to_depth requires NHWC format
@@ -222,7 +227,7 @@ class Model(ModelDesc):
             pred = (LinearWrap(feature)
                    .Conv2D('conv7_4', 1024, 3, stride=1)
                    .BatchNorm('bn7_4')
-                   .LeakyReLU('leaky7_4', cfg.leaky_k)
+                   .ReLU('leaky7_4')
                    .Conv2D('conv7_5', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())
 
         pred = tf.identity(pred, 'lite_output')

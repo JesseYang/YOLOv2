@@ -21,22 +21,25 @@ except Exception:
     from utils import postprocess
 
 try:
-    from .darknet_yolo import DarknetYolo as DkModel
-    # from .shufflenet_yolo import Model as ShfModel
+    from .darknet_yolo import DarknetYolo
+    from .darknet_yolo_lite import DarknetYoloLite
+    from .shufflenet_yolo import ShufflenetYolo
 except Exception:
-    from darknet_yolo import DarknetYolo as DkModel
-    # from shufflenet_yolo import Model as ShfModel
+    from darknet_yolo import DarknetYolo
+    from darknet_yolo_lite import DarknetYoloLite
+    from shufflenet_yolo import ShufflenetYolo
 
 def get_pred_func(args):
     sess_init = SaverRestore(args.model_path)
-    model = DkModel()
-    # if args.model == 'darknet':
-    #     model = DkModel()
-    # else:
-    #     model = ShfModel()
+    if args.model == "darknet":
+        model = DarknetYolo()
+    elif args.model == "darknet_lite":
+        model = DarknetYoloLite()
+    else:
+        model = ShufflenetYolo("NCHW")
     predict_config = PredictConfig(session_init=sess_init,
                                    model=model,
-                                   input_names=["input", "spec_mask"],
+                                   input_names=["input"],
                                    output_names=["pred_x", "pred_y", "pred_w", "pred_h", "pred_conf", "pred_prob"])
 
     predict_func = OfflinePredictor(predict_config) 
@@ -88,8 +91,8 @@ def predict_image(input_path, output_path, predict_func, det_th):
     cvt_clr_image = cv2.cvtColor(ori_image, cv2.COLOR_BGR2RGB)
     image = cv2.resize(cvt_clr_image, (cfg.img_w, cfg.img_h))
     image = np.expand_dims(image, axis=0)
-    spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_h // 32, cfg.img_w // 32), dtype=float) == 0
-    predictions = predict_func([image, spec_mask])
+    # spec_mask = np.zeros((1, cfg.n_boxes, cfg.img_h // 32, cfg.img_w // 32), dtype=float) == 0
+    predictions = predict_func(image)
 
     boxes = postprocess(predictions, image_path=input_path, det_th=det_th)
 
@@ -175,7 +178,7 @@ def generate_pred_images(image_paths, predict_func, crop, output_dir, det_th, en
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', help='path of the model waiting for validation.')
-    parser.add_argument('--model', help='the model used', default='darknet')
+    parser.add_argument('--model', choices=['darknet', 'darknet_lite', 'shufflenet'], help='the model used', default='darknet')
     parser.add_argument('--data_format', choices=['NCHW', 'NHWC'], default='NHWC')
     parser.add_argument('--input_path', help='path of the input image')
     parser.add_argument('--output_path', help='path of the output image', default='output.png')

@@ -46,8 +46,8 @@ def DepthConv(x, out_channel, kernel_shape, padding='SAME', stride=1,
     return nl(conv, name='output')
 
 @under_name_scope()
-def channel_shuffle(l, group):
-    if args.multi_scale:
+def channel_shuffle(l, group, multi_scale):
+    if multi_scale:
         in_shape = tf.shape(l)
         in_channel = l.get_shape().as_list()[1]
         in_h = in_shape[2]
@@ -79,7 +79,7 @@ class ShufflenetYolo(YoloModel):
             # because the number of input channels is relatively small.
             first_split = group if in_channel != 16 else 1
             l = Conv2D('conv1', l, out_channel // 4, 1, split=first_split, nl=BNReLU)
-            l = channel_shuffle(l, group)
+            l = channel_shuffle(l, group, self.multi_scale)
             l = DepthConv('dconv', l, out_channel // 4, 3, nl=BN, stride=stride)
 
             l = Conv2D('conv2', l,

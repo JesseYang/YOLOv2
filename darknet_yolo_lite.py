@@ -33,7 +33,7 @@ def ReLU(x, name=None):
 
 class DarknetYoloLite(YoloModel):
 
-    def _build_graph(self, image):
+    def get_logits(self, image):
         # the network part
         with argscope(Conv2D, nl=tf.identity, use_bias=False), \
              argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format):

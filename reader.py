@@ -12,52 +12,13 @@ import json
 import uuid
 try:
     from .cfgs.config import cfg
+    from .utils import Box, box_iou
 except Exception:
     from cfgs.config import cfg
+    from utils import Box, box_iou
 
 from tensorpack import *
 
-
-class Box():
-    def __init__(self, p1, p2, p3, p4, mode='XYWH'):
-        if mode == 'XYWH':
-            # parameters: center_x, center_y, width, height
-            self.x = p1
-            self.y = p2
-            self.w = p3
-            self.h = p4
-        if mode == "XYXY":
-            # parameters: xmin, ymin, xmax, ymax
-            self.x = (p1 + p3) / 2
-            self.y = (p2 + p4) / 2
-            self.w = p3 - p1
-            self.h = p4 - p2
-
-def overlap(x1, len1, x2, len2):
-    len1_half = len1 / 2
-    len2_half = len2 / 2
-
-    left = max(x1 - len1_half, x2 - len2_half)
-    right = min(x1 + len1_half, x2 + len2_half)
-
-    return right - left
-
-def box_intersection(a, b):
-    w = overlap(a.x, a.w, b.x, b.w)
-    h = overlap(a.y, a.h, b.y, b.h)
-    if w < 0 or h < 0:
-        return 0
-
-    area = w * h
-    return area
-
-def box_union(box1, box2):
-    i = box_intersection(box1, box2)
-    u = box1.w * box1.h + box2.w * box2.h - i
-    return u
-
-def box_iou(box1, box2):
-    return box_intersection(box1, box2) / box_union(box1, box2)
 
 class Data(RNGDataFlow):
     def __init__(self, filename_list, shuffle, flip, affine_trans, use_multi_scale, period):

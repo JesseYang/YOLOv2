@@ -10,6 +10,7 @@ import os
 import shutil
 import multiprocessing
 import json
+from abc import abstractmethod
 
 import tensorflow as tf
 from tensorflow.contrib.layers import variance_scaling_initializer
@@ -24,33 +25,45 @@ try:
     from .cfgs.config import cfg
     from .reader import Data, generate_gt_result
     from .evaluate import do_python_eval
+    from .utils import postprocess
 except Exception:
     from cfgs.config import cfg
     from reader import Data, generate_gt_result
     from evaluate import do_python_eval
+    from utils import postprocess
 
-@layer_register(use_scope=None)
-def ReLU(x, name=None):
-    x = tf.nn.relu(x, name=name)
-    return x
+class YoloModel(ModelDesc):
 
-class Model(ModelDesc):
-
-    def __init__(self, data_format="NHWC"):
-        super(Model, self).__init__()
+    def __init__(self, data_format="NHWC", multi_scale=False):
+        super(YoloModel, self).__init__()
         self.data_format = data_format
+        self.multi_scale = multi_scale
 
     def _get_inputs(self):
-        return [InputDesc(tf.uint8, [None, None, None, 3], 'input'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'tx'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'ty'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'tw'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'th'),
-                InputDesc(tf.float32, [None, cfg.n_boxes, cfg.n_classes, None, None], 'tprob'),
-                InputDesc(tf.bool, [None, cfg.n_boxes, None, None], 'spec_mask'),
-                InputDesc(tf.float32, [None, cfg.max_box_num, 4], 'truth_box'),
-                InputDesc(tf.float32, [None, 3], 'ori_shape'),
-                ]
+        if self.multi_scale == False:
+            cell_h = int(cfg.img_h / cfg.grid_h)
+            cell_w = int(cfg.img_w / cfg.grid_w)
+            return [InputDesc(tf.uint8, [None, cfg.img_h, cfg.img_w, 3], 'input'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'tx'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'ty'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'tw'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, cell_h, cell_w], 'th'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, cfg.n_classes, cell_h, cell_w], 'tprob'),
+                    InputDesc(tf.bool, [None, cfg.n_boxes, cell_h, cell_w], 'spec_mask'),
+                    InputDesc(tf.float32, [None, cfg.max_box_num, 4], 'truth_box'),
+                    InputDesc(tf.float32, [None, 3], 'ori_shape'),
+                    ]
+        else:
+            return [InputDesc(tf.uint8, [None, None, None, 3], 'input'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'tx'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'ty'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'tw'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, 1, None, None], 'th'),
+                    InputDesc(tf.float32, [None, cfg.n_boxes, cfg.n_classes, None, None], 'tprob'),
+                    InputDesc(tf.bool, [None, cfg.n_boxes, None, None], 'spec_mask'),
+                    InputDesc(tf.float32, [None, cfg.max_box_num, 4], 'truth_box'),
+                    InputDesc(tf.float32, [None, 3], 'ori_shape'),
+                    ]
 
     def cal_multi_multi_iou(self, boxes1, boxes2):
         """
@@ -101,6 +114,15 @@ class Model(ModelDesc):
         iou = self.cal_multi_multi_iou(b_pred, b_one_truth)
         return iou
 
+    @abstractmethod
+    def get_logits(self, image):
+        """
+        Args:
+            image: 4D tensor of cfg.img_hxcfg.img_w in ``self.data_format``
+        Returns:
+            cfg.img_h/32 x cfg.img_w/32 logits in ``self.data_format``
+        """
+
     def _build_graph(self, inputs):
         image, tx, ty, tw, th, tprob, spec_mask, truth_box, ori_shape = inputs
         self.batch_size = tf.shape(image)[0]
@@ -127,116 +149,12 @@ class Model(ModelDesc):
 
         image = tf.identity(image, name='network_input')
 
-        # the network part
-        with argscope(Conv2D, nl=tf.identity, use_bias=False), \
-             argscope([Conv2D, MaxPooling, GlobalAvgPooling, BatchNorm], data_format=self.data_format):
-            # feature extracotr part
-            high_res = (LinearWrap(image)
-                      .Conv2D('conv1_1', 32, 3, stride=1)
-                      .BatchNorm('bn1_1')
-                      .ReLU('leaky1_1')
-                      .MaxPooling('pool1', 2)
-                      # 208x208
-                      .Conv2D('conv2_1', 64, 3, stride=1)
-                      .BatchNorm('bn2_1')
-                      .ReLU('leaky2_1')
-                      .MaxPooling('pool2', 2)
-                      # 104x104
-                      .Conv2D('conv3_1', 128, 3, stride=1)
-                      .BatchNorm('bn3_1')
-                      .ReLU('leaky3_1')
-                      .Conv2D('conv3_2', 64, 1, stride=1)
-                      .BatchNorm('bn3_2')
-                      .ReLU('leaky3_2')
-                      .Conv2D('conv3_3', 128, 3, stride=1)
-                      .BatchNorm('bn3_3')
-                      .ReLU('leaky3_3')
-                      .MaxPooling('pool3', 2)
-                      # 52x52
-                      .Conv2D('conv4_1', 256, 3, stride=1)
-                      .BatchNorm('bn4_1')
-                      .ReLU('leaky4_1')
-                      .Conv2D('conv4_2', 128, 1, stride=1)
-                      .BatchNorm('bn4_2')
-                      .ReLU('leaky4_2')
-                      .Conv2D('conv4_3', 256, 3, stride=1)
-                      .BatchNorm('bn4_3')
-                      .ReLU('leaky4_3')
-                      .MaxPooling('pool4', 2)
-                      # 26x26
-                      .Conv2D('conv5_1', 512, 3, stride=1)
-                      .BatchNorm('bn5_1')
-                      .ReLU('leaky5_1')
-                      .Conv2D('conv5_2', 256, 1, stride=1)
-                      .BatchNorm('bn5_2')
-                      .ReLU('leaky5_2')
-                      .Conv2D('conv5_3', 512, 3, stride=1)
-                      .BatchNorm('bn5_3')
-                      .ReLU('leaky5_3')
-                      .Conv2D('conv5_4', 256, 1, stride=1)
-                      .BatchNorm('bn5_4')
-                      .ReLU('leaky5_4')
-                      .Conv2D('conv5_5', 512, 3, stride=1)
-                      .BatchNorm('bn5_5')
-                      .ReLU('leaky5_5')())
+        logits = self.get_logits(image)
 
-            feature = (LinearWrap(high_res)
-                      .MaxPooling('pool5', 2)
-                      # 13x13
-                      .Conv2D('conv6_1', 1024, 3, stride=1)
-                      .BatchNorm('bn6_1')
-                      .ReLU('leaky6_1')
-                      .Conv2D('conv6_2', 512, 1, stride=1)
-                      .BatchNorm('bn6_2')
-                      .ReLU('leaky6_2')
-                      .Conv2D('conv6_3', 1024, 3, stride=1)
-                      .BatchNorm('bn6_3')
-                      .ReLU('leaky6_3')
-                      .Conv2D('conv6_4', 512, 1, stride=1)
-                      .BatchNorm('bn6_4')
-                      .ReLU('leaky6_4')
-                      .Conv2D('conv6_5', 1024, 3, stride=1)
-                      .BatchNorm('bn6_5')
-                      .ReLU('leaky6_5')())
-
-            # new layers part
-            low_res = (LinearWrap(feature)
-                      .Conv2D('conv7_1', 1024, 3, stride=1)
-                      .BatchNorm('bn7_1')
-                      .ReLU('leaky7_1')
-                      .Conv2D('conv7_2', 1024, 3, stride=1)
-                      .BatchNorm('bn7_2')
-                      .ReLU('leaky7_2')())
-
-            # reduce high_res channel num by 1x1 conv
-            high_res = (LinearWrap(high_res)
-                      .Conv2D('conv7_3', 64, 1, stride=1)
-                      .BatchNorm('bn7_3')
-                      .ReLU('leaky7_3')())
-
-            # concat high_res and low_res
-            # tf.space_to_depth requires NHWC format
-            if self.data_format == "NCHW":
-                high_res = tf.transpose(high_res, [0, 2, 3, 1])
-            high_res = tf.space_to_depth(high_res, 2, name="high_res_reshape")
-            if self.data_format == "NCHW":
-                high_res = tf.transpose(high_res, [0, 3, 1, 2])
-            # confirm that the data_format matches with axis
-            concat_axis = 1 if self.data_format == "NCHW" else 3
-            feature = tf.concat([high_res, low_res], axis=concat_axis, name="stack_feature")
-
-            pred = (LinearWrap(feature)
-                   .Conv2D('conv7_4', 1024, 3, stride=1)
-                   .BatchNorm('bn7_4')
-                   .ReLU('leaky7_4')
-                   .Conv2D('conv7_5', cfg.n_boxes * (5 + cfg.n_classes), 1, stride=1, use_bias=True)())
-
-        pred = tf.identity(pred, 'lite_output')
-
-        # the loss part, confirm that pred is NCHW format
+        # the loss part, confirm that logits is NCHW format
         if self.data_format == "NHWC":
-            pred = tf.transpose(pred, [0, 3, 1, 2])
-        pred = tf.reshape(pred, (-1, cfg.n_boxes, cfg.n_classes + 5, self.grid_h, self.grid_w))
+            logits = tf.transpose(logits, [0, 3, 1, 2])
+        pred = tf.reshape(logits, (-1, cfg.n_boxes, cfg.n_classes + 5, self.grid_h, self.grid_w))
         # each predictor has dimension: batch x n_boxes x value x grid_w x grid_h
         # for x, y, w, h, and conf, value is 1; for prob, value is n_classes
         x, y, w, h, conf, prob = tf.split(pred, num_or_size_splits=[1, 1, 1, 1, 1, cfg.n_classes], axis=2)
@@ -246,7 +164,6 @@ class Model(ModelDesc):
         w = tf.identity(w, name="pred_w")
         h = tf.identity(h, name="pred_h")
         conf = tf.sigmoid(conf, name="pred_conf")
-
 
         x_loss = tf.multiply(tf.square(tf.subtract(x, tx)), coord_scale)
         y_loss = tf.multiply(tf.square(tf.subtract(y, ty)), coord_scale)
@@ -269,7 +186,6 @@ class Model(ModelDesc):
 
         # for c_loss, the truth value tconf is the iou between the predictor box and ground truth box
         # calculate tconf
-
         grid_ary_x = tf.cast(tf.range(self.grid_w), tf.float32)
         grid_tensor_x = tf.tile(grid_ary_x, [self.batch_size * cfg.n_boxes * self.grid_h])
         grid_tensor_x = tf.reshape(grid_tensor_x, (-1, cfg.n_boxes, self.grid_h, self.grid_w))
@@ -349,11 +265,6 @@ class Model(ModelDesc):
     def _get_optimizer(self):
         lr = get_scalar_var('learning_rate', 0, summary=True)
         return tf.train.MomentumOptimizer(lr, 0.9, use_nesterov=True)
-
-try:
-    from .predict import postprocess
-except Exception:
-    from predict import postprocess
 
 class CalMAP(Inferencer):
     def __init__(self, test_path):
@@ -455,7 +366,7 @@ def get_data(train_or_test, multi_scale, batch_size):
     return ds
 
 
-def get_config(args):
+def get_config(args, model):
     if args.gpu != None:
         NR_GPU = len(args.gpu.split(','))
         batch_size = int(args.batch_size) // NR_GPU
@@ -470,11 +381,10 @@ def get_config(args):
 
 
       ScheduledHyperParamSetter('learning_rate',
-                                [(0, 1e-4)]),
+                                cfg.lr_schedule),
                                 # [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 6e-4), (15, 1e-3), (60, 1e-4), (90, 1e-5)]),
       ScheduledHyperParamSetter('unseen_scale',
-                                # [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
-                                [(0, 0)]),
+                                [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
       HumanHyperParamSetter('learning_rate'),
     ]
     if cfg.mAP == True:
@@ -485,61 +395,8 @@ def get_config(args):
     return TrainConfig(
         dataflow=ds_train,
         callbacks=callbacks,
-        model=Model(),
+        model=model,
         steps_per_epoch=1810,
         max_epoch=cfg.max_epoch,
     )
 
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default='0,1')
-    parser.add_argument('--batch_size', help='batch size', default=64)
-    parser.add_argument('--load', help='load model')
-    parser.add_argument('--multi_scale', action='store_true')
-    parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--logdir', help="directory of logging", default=None)
-    parser.add_argument('--flops', action="store_true", help="print flops and exit")
-    args = parser.parse_args()
-
-    if args.gpu:
-        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-        
-
-    if args.flops:
-        model = Model()
-        cell_h = int(cfg.img_h / cfg.grid_h)
-        cell_w = int(cfg.img_w / cfg.grid_w)
-        input_desc = [
-            InputDesc(tf.uint8, [1, 416, 416, 3], 'input'),
-            InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'tx'),
-            InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'ty'),
-            InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'tw'),
-            InputDesc(tf.float32, [1, cfg.n_boxes, 1, cell_h, cell_w], 'th'),
-            InputDesc(tf.float32, [1, cfg.n_boxes, cfg.n_classes, cell_h, cell_w], 'tprob'),
-            InputDesc(tf.bool, [1, cfg.n_boxes, cell_h, cell_w], 'spec_mask'),
-            InputDesc(tf.float32, [1, cfg.max_box_num, 4], 'truth_box'),
-            InputDesc(tf.float32, [1, 3], 'ori_shape'),
-        ]
-        input = PlaceholderInput()
-        input.setup(input_desc)
-        with TowerContext('', is_training=True):
-            model.build_graph(*input.get_input_tensors())
-
-        tf.profiler.profile(
-            tf.get_default_graph(),
-            cmd='op',
-            options=tf.profiler.ProfileOptionBuilder.float_operation())
-    else:
-        # assert args.gpu is not None, "Need to specify a list of gpu for training!"
-        if args.logdir != None:
-            logger.set_logger_dir(os.path.join("train_log", args.logdir))
-        else:
-            logger.auto_set_dir()
-        config = get_config(args)
-        if args.gpu != None:
-            config.nr_tower = len(args.gpu.split(','))
-
-        if args.load:
-            config.session_init = SaverRestore(args.load)
-        SyncMultiGPUTrainer(config).train()

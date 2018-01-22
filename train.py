@@ -44,6 +44,7 @@ class Model(ModelDesc):
                 InputDesc(tf.float32, [None, cfg.n_boxes, cfg.n_classes, None, None], 'tprob'),
                 InputDesc(tf.bool, [None, cfg.n_boxes, None, None], 'spec_mask'),
                 InputDesc(tf.float32, [None, cfg.max_box_num, 4], 'truth_box'),
+                InputDesc(tf.float32, [None, 3], 'ori_shape'),
                 ]
 
     def cal_multi_multi_iou(self, boxes1, boxes2):
@@ -96,7 +97,7 @@ class Model(ModelDesc):
         return iou
 
     def _build_graph(self, inputs):
-        image, tx, ty, tw, th, tprob, spec_mask, truth_box = inputs
+        image, tx, ty, tw, th, tprob, spec_mask, truth_box, ori_shape = inputs
         self.batch_size = tf.shape(image)[0]
         self.grid_h = tf.cast(tf.shape(image)[1] / 32, dtype=tf.int32)
         self.grid_w = tf.cast(tf.shape(image)[2] / 32, dtype=tf.int32)
@@ -351,7 +352,7 @@ except Exception:
 
 class CalMAP(Inferencer):
     def __init__(self, test_path):
-        self.names = ["pred_x", "pred_y", "pred_w", "pred_h", "pred_conf", "pred_prob"]
+        self.names = ["pred_x", "pred_y", "pred_w", "pred_h", "pred_conf", "pred_prob", "ori_shape", "loss"]
         self.test_path = test_path
         self.gt_dir = "result_gt"
         if os.path.isdir(self.gt_dir):
@@ -391,11 +392,8 @@ class CalMAP(Inferencer):
             image_id = os.path.basename(image_path).split('.')[0] if cfg.gt_format == "voc" else image_path
 
             cur_output = [ele[i] for ele in output]
-            predictions = [np.expand_dims(ele, axis=0) for ele in cur_output]
-            # image_shape = cur_output[6]
-
-            pred_x_shape = cur_output[0].shape
-            image_shape = [pred_x_shape[3] * 32, pred_x_shape[4] * 32, 3]
+            predictions = [np.expand_dims(ele, axis=0) for ele in cur_output[0:6]]
+            image_shape = cur_output[6]
 
             pred_results = postprocess(predictions, image_shape=image_shape)
             for class_name in pred_results.keys():
@@ -493,7 +491,7 @@ if __name__ == '__main__':
     parser.add_argument('--load', help='load model')
     parser.add_argument('--multi_scale', action='store_true')
     parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--log_dir', help="directory of logging", default=None)
+    parser.add_argument('--logdir', help="directory of logging", default=None)
     parser.add_argument('--flops', action="store_true", help="print flops and exit")
     args = parser.parse_args()
 
@@ -514,6 +512,7 @@ if __name__ == '__main__':
             InputDesc(tf.float32, [1, cfg.n_boxes, cfg.n_classes, cell_h, cell_w], 'tprob'),
             InputDesc(tf.bool, [1, cfg.n_boxes, cell_h, cell_w], 'spec_mask'),
             InputDesc(tf.float32, [1, cfg.max_box_num, 4], 'truth_box'),
+            InputDesc(tf.float32, [1, 3], 'ori_shape'),
         ]
         input = PlaceholderInput()
         input.setup(input_desc)
@@ -526,8 +525,8 @@ if __name__ == '__main__':
             options=tf.profiler.ProfileOptionBuilder.float_operation())
     else:
         # assert args.gpu is not None, "Need to specify a list of gpu for training!"
-        if args.log_dir != None:
-            logger.set_logger_dir(os.path.join("train_log", args.log_dir))
+        if args.logdir != None:
+            logger.set_logger_dir(os.path.join("train_log", args.logdir))
         else:
             logger.auto_set_dir()
         config = get_config(args)

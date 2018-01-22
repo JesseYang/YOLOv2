@@ -155,8 +155,8 @@ class Model(ModelDesc):
     def _build_graph(self, inputs):
         image, tx, ty, tw, th, tprob, spec_mask, truth_box, ori_shape = inputs
         self.batch_size = tf.shape(image)[0]
-        self.grid_h = tf.shape(spec_mask)[2]
-        self.grid_w = tf.shape(spec_mask)[3]
+        self.grid_h = tf.cast(tf.shape(image)[1] / 32, dtype=tf.int32)
+        self.grid_w = tf.cast(tf.shape(image)[2] / 32, dtype=tf.int32)
         self.unseen_scale = get_scalar_var('unseen_scale', 0, summary=True)
 
         spec_indicator = tf.reshape(tf.cast(spec_mask, tf.float32), (-1, cfg.n_boxes, 1, self.grid_h, self.grid_w))
@@ -495,33 +495,36 @@ def get_config(args):
 
       ScheduledHyperParamSetter('learning_rate',
                                 # [(0, 1e-4), (3, 2e-4), (6, 3e-4), (10, 4e-4), (30, 5e-4), (120, 1e-4), (150, 1e-5)]),
-                                [(0, 1e-4)]),
+                                [(0, 1e-5)]),
       ScheduledHyperParamSetter('unseen_scale',
                                 # [(0, cfg.unseen_scale), (cfg.unseen_epochs, 0)]),
                                 [(0, 0)]),
       HumanHyperParamSetter('learning_rate'),
     ]
     if cfg.mAP == True:
-        callbacks.append(EnableCallbackIf(PeriodicTrigger(InferenceRunner(ds_test, [CalMAP(cfg.test_list)]), every_k_epochs=3),
-                                          lambda x : x.epoch_num >= 10))
+        # callbacks.append(EnableCallbackIf(PeriodicTrigger(InferenceRunner(ds_test, [CalMAP(cfg.test_list)]), every_k_epochs=3),
+        #                                   lambda x : x.epoch_num >= 10))
+        callbacks.append(PeriodicTrigger(InferenceRunner(ds_test, [CalMAP(cfg.test_list)]),
+                                         every_k_epochs=1))
     if args.debug:
       callbacks.append(HookToCallback(tf_debug.LocalCLIDebugHook()))
     return TrainConfig(
         dataflow=ds_train,
         callbacks=callbacks,
         model=Model(multi_scale=args.multi_scale),
+        steps_per_epoch=1810,
         max_epoch=cfg.max_epoch,
     )
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default='1')
-    parser.add_argument('--batch_size', help='batch size', default=32)
+    parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default='0,1')
+    parser.add_argument('--batch_size', help='batch size', default=64)
     parser.add_argument('--load', help='load model')
     parser.add_argument('--multi_scale', action='store_true')
     parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--log_dir', help="directory of logging", default=None)
+    parser.add_argument('--logdir', help="directory of logging", default=None)
     parser.add_argument('--flops', action="store_true", help="print flops and exit")
     args = parser.parse_args()
 
@@ -555,8 +558,8 @@ if __name__ == '__main__':
             options=tf.profiler.ProfileOptionBuilder.float_operation())
     else:
         # assert args.gpu is not None, "Need to specify a list of gpu for training!"
-        if args.log_dir != None:
-            logger.set_logger_dir(os.path.join("train_log", args.log_dir))
+        if args.logdir != None:
+            logger.set_logger_dir(os.path.join("train_log", args.logdir))
         else:
             logger.auto_set_dir()
         config = get_config(args)

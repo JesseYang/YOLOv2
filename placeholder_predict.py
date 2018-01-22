@@ -37,15 +37,20 @@ def predict(args):
         truth_box = tf.placeholder(dtype=tf.float32,
                                    shape=[1, 30, 4],
                                    name='truth_box')
+        ori_shape = tf.placeholder(dtype=tf.float32,
+                                   shape=[1, 3],
+                                   name='ori_shape')
 
         with TowerContext('', is_training=False):
-            model.build_graph(image, tx, ty, tw, th, tprob, spec_mask, truth_box)
+            model.build_graph(image, tx, ty, tw, th, tprob, spec_mask, truth_box, ori_shape)
 
         saver = tf.train.Saver()
         saver.restore(sess, args.model)
 
         output = tf.get_default_graph().get_tensor_by_name("lite_output:0")
         output_ary = sess.run(output, feed_dict={image: np.zeros((1, 416, 416, 3))})
+
+        print(output_ary.shape)
 
         tf.train.write_graph(sess.graph_def, "./", "yolo.pb", as_text=False)
 

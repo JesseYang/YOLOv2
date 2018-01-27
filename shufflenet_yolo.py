@@ -77,7 +77,7 @@ class ShufflenetYolo(YoloModel):
 
             # We do not apply group convolution on the first pointwise layer
             # because the number of input channels is relatively small.
-            first_split = group if in_channel != 16 else 1
+            first_split = group if in_channel != 24 else 1
             l = Conv2D('conv1', l, out_channel // 4, 1, split=first_split, nl=BNReLU)
             l = channel_shuffle(l, group, self.multi_scale)
             l = DepthConv('dconv', l, out_channel // 4, 3, nl=BN, stride=stride)
@@ -98,7 +98,7 @@ class ShufflenetYolo(YoloModel):
             channels = [384, 768, 1536]
             # channels = [224, 416, 832]
 
-            l = Conv2D('conv1', image, 16, 3, stride=2, nl=BNReLU)
+            l = Conv2D('conv1', image, 24, 3, stride=2, nl=BNReLU)
             l = MaxPooling('pool1', l, 3, 2, padding='SAME')
 
             with tf.variable_scope('group1'):
